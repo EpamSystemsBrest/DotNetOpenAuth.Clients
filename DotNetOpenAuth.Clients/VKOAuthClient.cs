@@ -7,7 +7,7 @@ using System.Web;
 using System.Web.Script.Serialization;
 using DotNetOpenAuth.AspNet;
 
-namespace Clients.Code {
+namespace Clients {
     public class VkOAuthClient : IAuthenticationClient {
         private const string OAuthUrl = "https://oauth.vk.com/";
         private const string ApiUrl = "https://api.vk.com/";
