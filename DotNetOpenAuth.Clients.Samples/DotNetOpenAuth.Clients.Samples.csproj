@@ -105,9 +105,9 @@
     <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ClientProviders\DotNetOpenAuth.ClientProviders.csproj">
+    <ProjectReference Include="..\DotNetOpenAuth.Clients\DotNetOpenAuth.Clients.csproj">
       <Project>{545c1a16-75e3-469d-b6a9-9921ccd49bdd}</Project>
-      <Name>DotNetOpenAuth.ClientProviders</Name>
+      <Name>DotNetOpenAuth.Clients</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
