@@ -73,7 +73,7 @@
   <ItemGroup>
     <Compile Include="Default.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Code\VKOAuthClient.cs" />
+    <Compile Include="VKOAuthClient.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
