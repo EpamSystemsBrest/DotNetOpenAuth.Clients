@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("DotNetOpenAuth.ClientProviders.Tests")]
+[assembly: AssemblyTitle("DotNetOpenAuth.Clients.Tests")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("EPAM Systems")]
-[assembly: AssemblyProduct("DotNetOpenAuth.ClientProviders.Tests")]
+[assembly: AssemblyProduct("DotNetOpenAuth.Clients.Tests")]
 [assembly: AssemblyCopyright("Copyright © EPAM Systems 2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

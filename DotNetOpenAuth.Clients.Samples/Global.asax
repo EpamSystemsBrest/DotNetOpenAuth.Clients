@@ -1,1 +1,1 @@
-﻿<%@ Application Codebehind="Global.asax.cs" Inherits="DotNetOpenAuth.ClientProviders.Samples.MvcApplication" Language="C#" %>
+﻿<%@ Application CodeBehind="Global.asax.cs" Inherits="DotNetOpenAuth.Clients.Samples.MvcApplication" Language="C#" %>

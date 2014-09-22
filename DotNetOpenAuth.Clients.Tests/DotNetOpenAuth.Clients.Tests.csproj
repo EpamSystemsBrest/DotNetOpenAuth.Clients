@@ -6,8 +6,8 @@
     <ProjectGuid>{0EB8C47F-87A3-4D41-9124-6501F69F1FDE}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DotNetOpenAuth.ClientProviders.Tests</RootNamespace>
-    <AssemblyName>DotNetOpenAuth.ClientProviders.Tests</AssemblyName>
+    <RootNamespace>DotNetOpenAuth.Clients.Tests</RootNamespace>
+    <AssemblyName>DotNetOpenAuth.Clients.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -58,6 +58,9 @@
       <Project>{545c1a16-75e3-469d-b6a9-9921ccd49bdd}</Project>
       <Name>DotNetOpenAuth.Clients</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

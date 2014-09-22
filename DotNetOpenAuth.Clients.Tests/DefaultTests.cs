@@ -1,8 +1,7 @@
-﻿using System;
+﻿using Clients;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using ClientProviders;
 
-namespace DotNetOpenAuth.ClientProviders.Tests {
+namespace DotNetOpenAuth.Clients.Tests {
     [TestClass]
     public class DefaultTests {
         [TestMethod]
@@ -12,7 +11,7 @@ namespace DotNetOpenAuth.ClientProviders.Tests {
 
         [TestMethod]
         public void TestAddToReturnWrongValue() {
-            Assert.AreNotEqual(Default.Add(5, 3), 9);
+            Assert.AreNotEqual(Default.Add(5, 3), 1);
         }
     }
 }
