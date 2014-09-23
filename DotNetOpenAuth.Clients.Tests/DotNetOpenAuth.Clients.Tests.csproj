@@ -40,6 +40,7 @@
       <HintPath>..\packages\DotNetOpenAuth.AspNet.4.3.4.13329\lib\net45-full\DotNetOpenAuth.AspNet.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <Choose>
@@ -58,6 +59,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DefaultTests.cs" />
     <Compile Include="VkOauthTests.cs" />
+    <Compile Include="WebBrowserExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DotNetOpenAuth.Clients\DotNetOpenAuth.Clients.csproj">

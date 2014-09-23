@@ -1,4 +1,8 @@
-﻿using System.Windows.Forms;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
+using System.Web;
+using System.Windows.Forms;
 using Clients;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -8,29 +12,89 @@ namespace DotNetOpenAuth.Clients.Tests {
         [TestMethod]
         public void VerifyAuthentication() {
             //Arrange
-            //https://oauth.vk.com/authorize?client_id=4559228&response_type=code&redirect_uri=localhost%2Fservices.aspx&display=popup&scope=friends
+            string urlResult;
+            using (var webBrowser = new WebBrowser { ScriptErrorsSuppressed = true, }) {
+                webBrowser.Navigate("https://oauth.vk.com/authorize?client_id=4559228&response_type=code&redirect_uri=localhost%2Fservices.aspx&display=popup&scope=friends");
+                webBrowser.Wait();
+                WebBrowserExtentions.Try3Times(() => {
+                    PassLoginPage(webBrowser, "login", "password");
+                }, () => {
+                    Debug.WriteLine(webBrowser.DocumentText);
+                });
+                webBrowser.Wait();
 
-            //<div class="form_header">Phone or email</div>
-            //<input class="form_input" type="text" value="" name="email">
-            //<div class="form_header">Password</div>
-            //<input class="form_input" type="password" name="pass">
-            //<div class="popup_login_btn">
-            //<button id="install_allow" class="flat_button popup_login_btn button_big" onclick="return login();" type="submit">Log in</button>
-            //</div>
+                WebBrowserExtentions.Try3Times(() => {
+                    PassPermissionPage(webBrowser);
+                }, () => {
+                    Debug.WriteLine(webBrowser.DocumentText);
+                });
+                webBrowser.Wait();
 
-            using (var webBrowser = new WebBrowser { ScriptErrorsSuppressed = true }) {
-                //webBrowser.Navigate(loginUri.AbsoluteUri);
-                //webBrowser.Wait();
+                var requestBase = webBrowser.CreateRequestBase();
+                urlResult = webBrowser.Url.AbsoluteUri;
+                webBrowser.Dispose();
             }
-
-            var vk = new VkOAuthClient("4559228", "pkzqWBIXivRKrN8esLTS");
-
             //Act
 
+            //Assert
+            Assert.IsFalse(urlResult.Contains("http://localhost/services.aspx?code="));
+        }
 
+        [TestMethod]
+        public void VerifyWrongAuthentication() {
+            //Arrange
+            string urlResult;
+            using (var webBrowser = new WebBrowser { ScriptErrorsSuppressed = true, }) {
+                webBrowser.Navigate("https://oauth.vk.com/authorize?client_id=4559228&response_type=code&redirect_uri=localhost%2Fservices.aspx&display=popup&scope=friends");
+                webBrowser.Wait();
+                WebBrowserExtentions.Try3Times(() => {
+                    PassLoginPage(webBrowser, "wrong_login", "wrong_password");
+                }, () => {
+                    Debug.WriteLine(webBrowser.DocumentText);
+                });
+                webBrowser.Wait();
+
+                WebBrowserExtentions.Try3Times(() => {
+                    PassPermissionPage(webBrowser);
+                }, () => {
+                    Debug.WriteLine(webBrowser.DocumentText);
+                });
+                webBrowser.Wait();
+
+                var requestBase = webBrowser.CreateRequestBase();
+                urlResult = webBrowser.Url.AbsoluteUri;
+                webBrowser.Dispose();
+            }
+            //Act
 
             //Assert
+            Assert.IsTrue(urlResult.Contains("http://localhost/services.aspx?code="));
+        }
 
+        private void PassPermissionPage(WebBrowser webBrowser) {
+            var yesButton = webBrowser.GetElementByIdAndAttribute("install_allow");
+            yesButton.InvokeMember("click");
+            webBrowser.Wait();
+        }
+
+        private void PassLoginPage(WebBrowser webBrowser, string login, string pass) {
+            var loginBox = webBrowser.GetElementByTagAndAttribute("input", "name", "email");
+
+            if (loginBox == null) {
+                var logout = webBrowser.GetElementByTagAndAttributePart("a", "href", "/logout");
+                logout.InvokeMember("click");
+
+                loginBox = webBrowser.GetElementByTagAndAttribute("input", "name", "email");
+            }
+
+            var passwordBox = webBrowser.GetElementByTagAndAttribute("input", "name", "pass");
+            var submitButton = webBrowser.GetElementByIdAndAttribute("install_allow");
+
+            loginBox.SetAttribute("value", login);
+            passwordBox.SetAttribute("value", pass);
+            submitButton.InvokeMember("click");
+
+            webBrowser.Wait();
         }
     }
 }
