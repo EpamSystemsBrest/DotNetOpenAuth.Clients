@@ -6,6 +6,7 @@ namespace DotNetOpenAuth.Clients.Samples {
         protected void Application_Start() {
             AreaRegistration.RegisterAllAreas();
             RouteConfig.RegisterRoutes(RouteTable.Routes);
+            AuthConfig.RegisterAuth();
         }
     }
 }
