@@ -37,25 +37,8 @@ namespace Clients {
 
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
             try {
-                var code = context.Request["code"];
-
-                var address = BuildUri(OAuthUrl, "access_token", new NameValueCollection() { 
-                                         { "client_id", _appId },
-                                         { "client_secret", _appSecret },
-                                         { "code", code },
-                                         { "redirect_uri", HttpUtility.UrlEncode(RemoveUriParameter(context.Request.Url, "code")) }
-                });
-
-                var response = Load(address);
-                var accessToken = DeserializeJson<AccessToken>(response);
-
-                address = BuildUri(ApiUrl, "method/users.get", new NameValueCollection() { 
-                                      { "uids", accessToken.user_id }
-                });
-
-                response = Load(address);
-                var usersData = DeserializeJson<UsersData>(response);
-                var userData = usersData.response.First();
+                var accessToken = GetAccessToken(context);
+                var userData = GetUserData(accessToken);
 
                 return new AuthenticationResult(
                     isSuccessful: true,
@@ -69,6 +52,29 @@ namespace Clients {
         }
 
         #endregion IAuthenticationClient
+
+        private UserData GetUserData(AccessToken accessToken) {
+            var address = BuildUri(ApiUrl, "method/users.get", new NameValueCollection()
+            {
+                {"uids", accessToken.user_id}
+            });
+
+            string response = Load(address);
+            return DeserializeJson<UsersData>(response).response.First();
+        }
+
+        private AccessToken GetAccessToken(HttpContextBase context) {
+            var code = context.Request["code"];
+            var address = BuildUri(OAuthUrl, "access_token", new NameValueCollection()
+            {
+                {"client_id", _appId},
+                {"client_secret", _appSecret},
+                {"code", code},
+                {"redirect_uri", HttpUtility.UrlEncode(RemoveUriParameter(context.Request.Url, "code"))}
+            });
+
+            return DeserializeJson<AccessToken>(Load(address));
+        }
 
         private string BuildUri(string url, string path, NameValueCollection query) {
             var uriBuilder = new UriBuilder(url) {
