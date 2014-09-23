@@ -21,7 +21,7 @@ namespace Clients {
             _appSecret = appSecret;
         }
 
-        #region IAuthenticationClient 
+        #region IAuthenticationClient
 
         public string ProviderName { get { return "VKontakte"; } }
 
@@ -30,8 +30,8 @@ namespace Clients {
                                 { "client_id",     _appId },
                                 { "redirect_uri" , HttpUtility.UrlEncode(returnUrl.AbsoluteUri) },
                                 { "response_type", "code" },
-                                { "v",             "5.3" } }
-                );
+                                { "v",             "5.3" } 
+            });
 
             HttpContext.Current.Response.Redirect(uri, false);
         }
@@ -69,7 +69,7 @@ namespace Clients {
                 return new AuthenticationResult(ex);
             }
         }
-        
+
         #endregion IAuthenticationClient
 
         private string BuildUri(string path, NameValueCollection query) {

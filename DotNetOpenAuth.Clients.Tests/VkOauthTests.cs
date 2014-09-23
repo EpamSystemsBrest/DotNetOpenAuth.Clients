@@ -1,74 +1,49 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
-using System.Web;
+﻿using System.Diagnostics;
 using System.Windows.Forms;
-using Clients;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DotNetOpenAuth.Clients.Tests {
     [TestClass]
     public class VkOauthTests {
+        private const string OauthString = "https://oauth.vk.com/authorize?client_id=4559228&response_type=code&redirect_uri=localhost%2Fservices.aspx&display=popup&scope=friends";
+        private const string ResponseString = "http://localhost/services.aspx?code=";
+
         [TestMethod]
         public void VerifyAuthentication() {
-            //Arrange
-            string urlResult;
-            using (var webBrowser = new WebBrowser { ScriptErrorsSuppressed = true, }) {
-                webBrowser.Navigate("https://oauth.vk.com/authorize?client_id=4559228&response_type=code&redirect_uri=localhost%2Fservices.aspx&display=popup&scope=friends");
-                webBrowser.Wait();
-                WebBrowserExtentions.Try3Times(() => {
-                    PassLoginPage(webBrowser, "login", "password");
-                }, () => {
-                    Debug.WriteLine(webBrowser.DocumentText);
-                });
-                webBrowser.Wait();
-
-                WebBrowserExtentions.Try3Times(() => {
-                    PassPermissionPage(webBrowser);
-                }, () => {
-                    Debug.WriteLine(webBrowser.DocumentText);
-                });
-                webBrowser.Wait();
-
-                var requestBase = webBrowser.CreateRequestBase();
-                urlResult = webBrowser.Url.AbsoluteUri;
-                webBrowser.Dispose();
-            }
-            //Act
-
-            //Assert
-            Assert.IsFalse(urlResult.Contains("http://localhost/services.aspx?code="));
+            string urlResult = GetUrlResult("demn_@tut.by", "Поменяла!");
+            Assert.IsTrue(urlResult.Contains(ResponseString));
         }
 
         [TestMethod]
         public void VerifyWrongAuthentication() {
-            //Arrange
-            string urlResult;
-            using (var webBrowser = new WebBrowser { ScriptErrorsSuppressed = true, }) {
-                webBrowser.Navigate("https://oauth.vk.com/authorize?client_id=4559228&response_type=code&redirect_uri=localhost%2Fservices.aspx&display=popup&scope=friends");
-                webBrowser.Wait();
-                WebBrowserExtentions.Try3Times(() => {
-                    PassLoginPage(webBrowser, "wrong_login", "wrong_password");
-                }, () => {
-                    Debug.WriteLine(webBrowser.DocumentText);
-                });
-                webBrowser.Wait();
+            string urlResult = GetUrlResult("demn_@tut.by", "Wrong!");
+            Assert.IsFalse(urlResult.Contains(ResponseString));
+        }
 
-                WebBrowserExtentions.Try3Times(() => {
-                    PassPermissionPage(webBrowser);
-                }, () => {
-                    Debug.WriteLine(webBrowser.DocumentText);
-                });
-                webBrowser.Wait();
-
-                var requestBase = webBrowser.CreateRequestBase();
-                urlResult = webBrowser.Url.AbsoluteUri;
-                webBrowser.Dispose();
+        private string GetUrlResult(string email, string pass) {
+            using (var webBrowser = new WebBrowser { ScriptErrorsSuppressed = true }) {
+                WaitingNavigationTo(webBrowser, OauthString);
+                TryPassLoginPassPage(webBrowser, email, pass);
+                TryPassingPermissionPage(webBrowser);
+                return webBrowser.Url.AbsoluteUri;
             }
-            //Act
+        }
 
-            //Assert
-            Assert.IsTrue(urlResult.Contains("http://localhost/services.aspx?code="));
+        private static void WaitingNavigationTo(WebBrowser webBrowser, string oauthString) {
+            webBrowser.Navigate(oauthString);
+            webBrowser.Wait();
+        }
+
+        private void TryPassLoginPassPage(WebBrowser webBrowser, string email, string pass) {
+            WebBrowserExtensions.Try3Times(() => PassLoginPage(webBrowser, email, pass),
+                () => Debug.WriteLine(webBrowser.DocumentText));
+            webBrowser.Wait();
+        }
+
+        private void TryPassingPermissionPage(WebBrowser webBrowser) {
+            WebBrowserExtensions.Try3Times(() => PassPermissionPage(webBrowser),
+                () => Debug.WriteLine(webBrowser.DocumentText));
+            webBrowser.Wait();
         }
 
         private void PassPermissionPage(WebBrowser webBrowser) {

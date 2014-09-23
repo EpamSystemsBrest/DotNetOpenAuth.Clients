@@ -5,7 +5,7 @@ using System.Web;
 using System.Windows.Forms;
 
 namespace DotNetOpenAuth.Clients.Tests {
-    public static class WebBrowserExtentions {
+    public static class WebBrowserExtensions {
         public static void Wait(this WebBrowser webBrowser) {
             for (int i = 0; i <= 400; i++) {
                 Application.DoEvents();
