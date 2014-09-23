@@ -14,16 +14,11 @@ namespace Clients {
         private readonly string _appId;
         private readonly string _appSecret;
 
-        public string ProviderName { get; private set; }
+        public string ProviderName { get { return "VKontakte"; } }
 
         public VkOAuthClient(string appId, string appSecret) {
             _appId = appId;
             _appSecret = appSecret;
-            ProviderName = "VK";
-        }
-
-        string IAuthenticationClient.ProviderName {
-            get { return ProviderName; }
         }
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
