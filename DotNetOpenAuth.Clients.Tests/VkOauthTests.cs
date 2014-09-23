@@ -1,24 +1,41 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
+using System.Web;
 using System.Windows.Forms;
+using Clients;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DotNetOpenAuth.Clients.Tests {
     [TestClass]
-    public class VkOauthTests {
-        private const string OauthString = "https://oauth.vk.com/authorize?client_id=4559228&response_type=code&redirect_uri=localhost%2Fservices.aspx&display=popup&scope=friends";
+    public class VkOAuthTests {
+        private const string AppId = "4559228";
+        private const string AppSecret = "pkzqWBIXivRKrN8esLTS";
+        private const string OauthString = "https://oauth.vk.com/authorize?client_id=" + AppId + "&response_type=code&redirect_uri=localhost%2Fservices.aspx&display=popup&scope=friends";
         private const string ResponseString = "http://localhost/services.aspx?code=";
+
+        private static readonly VkOAuthClient VkOAuthClient = new VkOAuthClient(AppId, AppSecret);
 
         [TestMethod]
         public void VerifyAuthentication() {
-            string urlResult = GetUrlResult("demn_@tut.by", "Поменяла!");
+            var urlResult = GetUrlResult("demn_@tut.by", "Поменяла!");
             Assert.IsTrue(urlResult.Contains(ResponseString));
         }
 
         [TestMethod]
         public void VerifyWrongAuthentication() {
-            string urlResult = GetUrlResult("demn_@tut.by", "Wrong!");
+            var urlResult = GetUrlResult("demn_@tut.by", "Wrong!");
             Assert.IsFalse(urlResult.Contains(ResponseString));
         }
+
+        //var httpContext =
+        //          new HttpContext(new HttpRequest(string.Empty, "http://localhost:4545/login", string.Empty),
+        //          new HttpResponse(new StringWriter()));
+        //HttpContextBase httpContextBase = new HttpContextWrapper(httpContext);
+        //VkOAuthClient.RequestAuthentication(httpContextBase, new Uri("http://localhost:4545/login"));
+        //var q = VkOAuthClient.VerifyAuthentication(httpContextBase);
+        //var name = q.UserName;
+
 
         private string GetUrlResult(string email, string pass) {
             using (var webBrowser = new WebBrowser { ScriptErrorsSuppressed = true }) {

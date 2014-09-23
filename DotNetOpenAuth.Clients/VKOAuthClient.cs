@@ -32,7 +32,7 @@ namespace Clients {
                                 { "v",             "5.3" } 
             });
 
-            HttpContext.Current.Response.Redirect(uri, false);
+            context.Response.Redirect(uri, false);
         }
 
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {

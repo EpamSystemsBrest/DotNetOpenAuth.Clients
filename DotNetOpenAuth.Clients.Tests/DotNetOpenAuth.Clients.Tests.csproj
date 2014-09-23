@@ -58,7 +58,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DefaultTests.cs" />
-    <Compile Include="VkOauthTests.cs" />
+    <Compile Include="VkOAuthTests.cs" />
     <Compile Include="WebBrowserExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
