@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Web;
 using System.Web.Script.Serialization;
 using DotNetOpenAuth.AspNet;
-using System.Collections.Specialized;
 
 namespace Clients {
     public class VkOAuthClient : IAuthenticationClient {
@@ -15,23 +15,22 @@ namespace Clients {
         private readonly string _appId;
         private readonly string _appSecret;
 
-
         public VkOAuthClient(string appId, string appSecret) {
             _appId = appId;
             _appSecret = appSecret;
         }
 
-        #region IAuthenticationClient 
+        #region IAuthenticationClient
 
         public string ProviderName { get { return "VKontakte"; } }
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
-            var uri = BuildUri("authorize", new NameValueCollection() { 
+            var uri = BuildUri(OAuthUrl, "authorize", new NameValueCollection() { 
                                 { "client_id",     _appId },
                                 { "redirect_uri" , HttpUtility.UrlEncode(returnUrl.AbsoluteUri) },
                                 { "response_type", "code" },
-                                { "v",             "5.3" } }
-                );
+                                { "v",             "5.3" } 
+            });
 
             HttpContext.Current.Response.Redirect(uri, false);
         }
@@ -40,7 +39,7 @@ namespace Clients {
             try {
                 var code = context.Request["code"];
 
-                var address = BuildUri("access_token", new NameValueCollection() { 
+                var address = BuildUri(OAuthUrl, "access_token", new NameValueCollection() { 
                                          { "client_id", _appId },
                                          { "client_secret", _appSecret },
                                          { "code", code },
@@ -50,9 +49,8 @@ namespace Clients {
                 var response = Load(address);
                 var accessToken = DeserializeJson<AccessToken>(response);
 
-                address = BuildUri("method/users.get", new NameValueCollection() { 
-                                      { "uids", accessToken.user_id },
-                                      { "fields", "photo_50" }
+                address = BuildUri(ApiUrl, "method/users.get", new NameValueCollection() { 
+                                      { "uids", accessToken.user_id }
                 });
 
                 response = Load(address);
@@ -69,17 +67,20 @@ namespace Clients {
                 return new AuthenticationResult(ex);
             }
         }
-        
+
         #endregion IAuthenticationClient
 
-        private string BuildUri(string path, NameValueCollection query) {
-            var uriBuilder = new UriBuilder(OAuthUrl) {
+        private string BuildUri(string url, string path, NameValueCollection query) {
+            var uriBuilder = new UriBuilder(url) {
                 Path = path,
-                Query = query.ToString()
+                Query = ConstructQueryString(query)
             };
             return uriBuilder.ToString();
         }
 
+        private static String ConstructQueryString(NameValueCollection parameters) {
+            return String.Join("&", (from string name in parameters select String.Concat(name, "=", parameters[name])).ToArray());
+        }
 
         private static string Load(string address) {
             var request = WebRequest.Create(address) as HttpWebRequest;
