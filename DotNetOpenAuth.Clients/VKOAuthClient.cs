@@ -6,6 +6,7 @@ using System.Net;
 using System.Web;
 using System.Web.Script.Serialization;
 using DotNetOpenAuth.AspNet;
+using System.Collections.Specialized;
 
 namespace Clients {
     public class VkOAuthClient : IAuthenticationClient {
@@ -14,42 +15,53 @@ namespace Clients {
         private readonly string _appId;
         private readonly string _appSecret;
 
-        public string ProviderName { get { return "VKontakte"; } }
 
         public VkOAuthClient(string appId, string appSecret) {
             _appId = appId;
             _appSecret = appSecret;
         }
 
-        public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
-            var address = new Uri(new Uri(OAuthUrl),
-                string.Format("authorize?client_id={0}&redirect_uri={1}&response_type=code&v=5.3",
-                    _appId, HttpUtility.UrlEncode(returnUrl.AbsoluteUri)));
+        #region IAuthenticationClient 
 
-            HttpContext.Current.Response.Redirect(address.AbsoluteUri, false);
+        public string ProviderName { get { return "VKontakte"; } }
+
+        public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
+            var uri = BuildUri("authorize", new NameValueCollection() { 
+                                { "client_id",     _appId },
+                                { "redirect_uri" , HttpUtility.UrlEncode(returnUrl.AbsoluteUri) },
+                                { "response_type", "code" },
+                                { "v",             "5.3" } }
+                );
+
+            HttpContext.Current.Response.Redirect(uri, false);
         }
 
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
             try {
                 var code = context.Request["code"];
 
-                var address = new Uri(new Uri(OAuthUrl),
-                    String.Format("access_token?client_id={0}&client_secret={1}&code={2}&redirect_uri={3}",
-                        _appId, _appSecret, code, HttpUtility.UrlEncode(RemoveUriParameter(context.Request.Url, "code"))));
+                var address = BuildUri("access_token", new NameValueCollection() { 
+                                         { "client_id", _appId },
+                                         { "client_secret", _appSecret },
+                                         { "code", code },
+                                         { "redirect_uri", HttpUtility.UrlEncode(RemoveUriParameter(context.Request.Url, "code")) }
+                });
 
-                var response = Load(address.AbsoluteUri);
+                var response = Load(address);
                 var accessToken = DeserializeJson<AccessToken>(response);
 
-                address = new Uri(new Uri(ApiUrl),
-                    String.Format("method/users.get?uids={0}&fields=photo_50", accessToken.user_id));
+                address = BuildUri("method/users.get", new NameValueCollection() { 
+                                      { "uids", accessToken.user_id },
+                                      { "fields", "photo_50" }
+                });
 
-                response = Load(address.AbsoluteUri);
+                response = Load(address);
                 var usersData = DeserializeJson<UsersData>(response);
                 var userData = usersData.response.First();
 
                 return new AuthenticationResult(
                     isSuccessful: true,
-                    provider: (this as IAuthenticationClient).ProviderName,
+                    provider: ProviderName,
                     providerUserId: accessToken.user_id,
                     userName: userData.first_name + " " + userData.last_name,
                     extraData: new Dictionary<string, string> { { "LastName", userData.last_name }, { "FirstName", userData.first_name } });
@@ -57,6 +69,17 @@ namespace Clients {
                 return new AuthenticationResult(ex);
             }
         }
+        
+        #endregion IAuthenticationClient
+
+        private string BuildUri(string path, NameValueCollection query) {
+            var uriBuilder = new UriBuilder(OAuthUrl) {
+                Path = path,
+                Query = query.ToString()
+            };
+            return uriBuilder.ToString();
+        }
+
 
         private static string Load(string address) {
             var request = WebRequest.Create(address) as HttpWebRequest;
