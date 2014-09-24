@@ -1,139 +1,147 @@
-﻿using DotNetOpenAuth.AspNet;
+﻿using System.Collections.Generic;
+using DotNetOpenAuth.AspNet;
+using System.Globalization;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Web;
 
-namespace Clients
-{
-    public class FlickrOAuthClient : IAuthenticationClient
-    {
-        private const string OAuthUrl = "http://www.flickr.com/services/oauth//request_token";
-        private const string ApiUrl = "http://api.flickr.com";
-        private string _appId;
-        private string _appSecret;
-        private string signature;
-        public string ProviderName { get; private set; }
+namespace Clients {
+    public class FlickrOAuthClient : IAuthenticationClient {
+        private const string RequestTokenUrl = "https://www.flickr.com/services/oauth/request_token";
+        private const string AccessTokenUrl = "https://www.flickr.com/services/oauth/access_token";
+        private const string AuthorizeUrl = "https://www.flickr.com/services/oauth/authorize";
+        private const string ApiUrl = "https://api.flickr.com";
 
-        public FlickrOAuthClient(string appId, string appSecret)
-        {
+        private readonly string _appId;
+        private readonly string _appSecret;
+        private string _oauthToken;
+        private string _tokenSecret;
+
+        public FlickrOAuthClient(string appId, string appSecret) {
             _appId = appId;
             _appSecret = appSecret;
-            ProviderName = "Flickr";
         }
 
-        public void RequestAuthentication(HttpContextBase context, Uri returnUrl)
-        {
-            //generate a random nonce and a timestamp
-            var rand = new Random();
-            var nonce = rand.Next(999999).ToString();
-            var timestamp = GetTimestamp();
+        #region IAuthenticationClient
 
-            //create the parameter string in alphabetical order
+        public string ProviderName { get { return "Flickr"; } }
+
+        public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
+            var rand = new Random();
+            var nonce = rand.Next(999999).ToString(CultureInfo.InvariantCulture);
+
             var parameters = "oauth_callback=" + UrlHelper.Encode(returnUrl.AbsoluteUri)
                                 + "&oauth_consumer_key=" + _appId
                                 + "&oauth_nonce=" + nonce
                                 + "&oauth_signature_method=HMAC-SHA1"
-                                + "&oauth_timestamp=" + timestamp
+                                + "&oauth_timestamp=" + GetTimestamp()
                                 + "&oauth_version=1.0";
 
-            //generate a signature base on the current requeststring and parameters
-            signature = GenerateSignature("GET", OAuthUrl, parameters);
+            var signature = GenerateSignature("GET", RequestTokenUrl, parameters);
 
-            //add the parameters and signature to the requeststring
-            var url = OAuthUrl + "?" + parameters + "&oauth_signature=" + signature;
+            var url = RequestTokenUrl + "?" + parameters + "&oauth_signature=" + signature;
 
-            //get request string
             var client = new WebClient();
             var request = client.DownloadString(url);
             var requestToken = request.Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries)[1];
-            var flickr_oauth = "http://www.flickr.com/services/oauth/authorize";
-            var answer = flickr_oauth + "?" + requestToken;
+            var requestTokenSecret = request.Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries)[2];
+            _tokenSecret = requestTokenSecret.Split('=')[1];
+            var redirectUrl = AuthorizeUrl + "?" + requestToken;
 
-            //redirect
-            HttpContext.Current.Response.Redirect(answer, false);
+            HttpContext.Current.Response.Redirect(redirectUrl, false);
         }
 
-        public AuthenticationResult VerifyAuthentication(HttpContextBase context)
-        {
-            //var oauth_verifier = context.Request.QueryString["oauth_verifier"];
-            //var oauth_token = context.Request.QueryString["oauth_token"];
-            //var flickr_access_token = "http://www.flickr.com/services/oauth/access_token";
-            //var parameters =
-            //            "?oauth_consumer_key=" + _appId +
-            //            "&oauth_nonce=37026218" +
-            //            "&oauth_signature_method=HMAC-SHA1" +
-            //            "&oauth_timestamp=1305586309" +
-            //            "&oauth_token=" +oauth_token+
-            //            "&oauth_verifier=" +oauth_verifier+
-            //            "&oauth_version=1.0";
-            //var sig = GenerateSignature("GET", flickr_access_token, parameters);
-            //var client = new WebClient();
-            //var url = flickr_access_token + parameters + "&oauth_signature=" + sig;
-            //var request = client.DownloadString(url);
+        public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
+            var oauthVerifier = context.Request.QueryString["oauth_verifier"];
+            _oauthToken = context.Request.QueryString["oauth_token"];
 
-            throw new NotImplementedException();
+            var rand = new Random();
+            var nonce = rand.Next(999999).ToString(CultureInfo.InvariantCulture);
+
+            var parameters =
+                        "oauth_consumer_key=" + _appId +
+                        "&oauth_nonce=" + nonce +
+                        "&oauth_signature_method=HMAC-SHA1" +
+                        "&oauth_timestamp=" + GetTimestamp() +
+                        "&oauth_token=" + _oauthToken +
+                        "&oauth_verifier=" + oauthVerifier +
+                        "&oauth_version=1.0";
+            var sig = GenerateSignature("GET", AccessTokenUrl, parameters);
+            var url = AccessTokenUrl + "?" + parameters + "&oauth_signature=" + sig;
+            var client = new WebClient();
+            var request = client.DownloadString(url);
+            var userData = CreateUserInfo(request);
+            return new AuthenticationResult(
+                    isSuccessful: true,
+                    provider: ProviderName,
+                    providerUserId: userData.user_nsid,
+                    userName: userData.username,
+                    extraData:
+                        new Dictionary<string, string>
+                        {
+                            {"FullName", userData.fullname},
+                        });
         }
 
-        private string GenerateSignature(string httpMethod, string ApiEndpoint, string parameters)
-        {
-            //url encode the API endpoint and the parameters       
-            var encodedUrl = UrlHelper.Encode(ApiEndpoint);
-            var encodedParameters = UrlHelper.Encode(parameters);
+        private UserData CreateUserInfo(string request) {
+            return new UserData {
+                fullname = HttpUtility.ParseQueryString(request).Get("fullname"),
+                user_nsid = HttpUtility.ParseQueryString(request).Get("user_nsid"),
+                username = HttpUtility.ParseQueryString(request).Get("username")
+            };
+        }
 
-            //generate the basestring
-            var basestring = httpMethod + "&" + encodedUrl + "&";
-            parameters = UrlHelper.Encode(parameters);
-            basestring = basestring + parameters;
+        #endregion IAuthenticationClient
+
+        private string GenerateSignature(string httpMethod, string apiEndpoint, string parameters) {
+            var basestring = httpMethod + "&" + UrlHelper.Encode(apiEndpoint) + "&" + UrlHelper.Encode(parameters);
 
             var encoding = new ASCIIEncoding();
 
             //create key (request_token can be an empty string)
-            var key = _appSecret + "&";
+            var key = _appSecret + "&" + _tokenSecret;
             var keyByte = encoding.GetBytes(key);
 
             //create message to encrypt
             var messageBytes = encoding.GetBytes(basestring);
             string signature;
             //encrypt message using hmac-sha1 with the provided key
-            using (var hmacsha1 = new HMACSHA1(keyByte))
-            {
+            using (var hmacsha1 = new HMACSHA1(keyByte)) {
                 byte[] hashmessage = hmacsha1.ComputeHash(messageBytes);
                 signature = Convert.ToBase64String(hashmessage);
             }
             return UrlHelper.Encode(signature);
         }
-        public static String GetTimestamp()
-        {
-            int epoch = (int)(DateTime.UtcNow - new DateTime(2000, 1, 1)).TotalSeconds;
-            return epoch.ToString();
+
+        private static string GetTimestamp() {
+            return ((int)(DateTime.UtcNow - new DateTime(2000, 1, 1)).TotalSeconds).
+                ToString(CultureInfo.InvariantCulture);
         }
 
+        private class UserData {
+            public string fullname;
+            public string user_nsid;
+            public string username;
+        }
     }
+
     /// <summary> 
     /// URL encoding class.  Note: use at your own risk. 
     /// Written by: Ian Hopkins (http://www.lucidhelix.com) 
     /// Date: 2008-Dec-23 
     /// (Ported to C# by t3rse (http://www.t3rse.com)) 
     /// </summary> 
-    public class UrlHelper
-    {
-        public static string Encode(string str)
-        {
+    public static class UrlHelper {
+        public static string Encode(string str) {
             var charClass = String.Format("0-9a-zA-Z{0}", Regex.Escape("-_.!~*'()"));
-            return Regex.Replace(str,
-                String.Format("[^{0}]", charClass),
-                new MatchEvaluator(EncodeEvaluator));
-        }
-        public static string EncodeEvaluator(Match match)
-        {
-            return (match.Value == " ") ? "+" : String.Format("%{0:X2}", Convert.ToInt32(match.Value[0]));
+            return Regex.Replace(str, String.Format("[^{0}]", charClass), EncodeEvaluator);
         }
 
-    } 
+        private static string EncodeEvaluator(Match match) {
+            return (match.Value == " ") ? "+" : String.Format("%{0:X2}", Convert.ToInt32(match.Value[0]));
+        }
+    }
 }
