@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Web;
 using System.Web.Script.Serialization;
 using DotNetOpenAuth.AspNet;
@@ -31,21 +32,31 @@ namespace Clients {
                                 { "response_type", "code" },
                                 { "v",             "5.3" } 
             });
-
-            context.Response.Redirect(uri, false);
+            try {
+                context.Response.Redirect(uri, false);
+            } catch { //Tests context //TODO: @demns
+                context.Response.RedirectLocation = uri;
+            }
         }
 
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
             try {
                 var accessToken = GetAccessToken(context);
                 var userData = GetUserData(accessToken);
-
                 return new AuthenticationResult(
                     isSuccessful: true,
                     provider: ProviderName,
                     providerUserId: accessToken.user_id,
                     userName: userData.first_name + " " + userData.last_name,
-                    extraData: new Dictionary<string, string> { { "LastName", userData.last_name }, { "FirstName", userData.first_name } });
+                    extraData:
+                        new Dictionary<string, string>
+                        {
+                            {"LastName", userData.last_name},
+                            {"FirstName", userData.first_name}
+                        });
+            } catch (WebException ex) {
+                var responseStream = (MemoryStream)ex.Response.GetResponseStream();
+                throw new Exception(Encoding.UTF8.GetString(responseStream.ToArray()));
             } catch (Exception ex) {
                 return new AuthenticationResult(ex);
             }
@@ -103,7 +114,9 @@ namespace Clients {
             if (!string.IsNullOrEmpty(valueCollection[uriParameterName]))
                 valueCollection.Remove(uriParameterName);
 
-            return uri.GetLeftPart(UriPartial.Path) + "?" + valueCollection;
+            if (valueCollection.HasKeys())
+                return uri.GetLeftPart(UriPartial.Path) + "?" + valueCollection;
+            return uri.GetLeftPart(UriPartial.Path);
         }
 
         private static T DeserializeJson<T>(string input) {
