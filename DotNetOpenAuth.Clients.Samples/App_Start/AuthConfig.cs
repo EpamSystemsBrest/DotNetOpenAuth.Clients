@@ -1,9 +1,5 @@
 ﻿using Clients;
 using Microsoft.Web.WebPages.OAuth;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 
 namespace DotNetOpenAuth.Clients.Samples {
     public class AuthConfig {
@@ -25,8 +21,12 @@ namespace DotNetOpenAuth.Clients.Samples {
 
             //OAuthWebSecurity.RegisterGoogleClient();
 
-            OAuthWebSecurity.RegisterClient(new VkOAuthClient("4559228", "pkzqWBIXivRKrN8esLTS"));
             OAuthWebSecurity.RegisterClient(new FlickrOAuthClient("c2b9248adf2b3a90214a1c20fe1fdef6", "c1c66b0a7f1ca84d"));
+            OAuthWebSecurity.RegisterClient(new GooglePlusOAuthClient());
+            OAuthWebSecurity.RegisterClient(new PinterestOAuthClient());
+            OAuthWebSecurity.RegisterClient(new TumblrOAuthClient());
+            OAuthWebSecurity.RegisterClient(new TwitterOAuthClient());
+            OAuthWebSecurity.RegisterClient(new VkOAuthClient("4559228", "pkzqWBIXivRKrN8esLTS"));
         }
     }
 }
