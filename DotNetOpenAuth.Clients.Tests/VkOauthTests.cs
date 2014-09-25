@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace DotNetOpenAuth.Clients.Tests {
     [TestClass]
     public class VkOauthTests {
-        private const string Url = "http://aaa.vcap.me";
+        private const string Url = "http://login.vcap.me";
         private const string ResponseString = "Дмитрий Самсонов";
         private static readonly VkOAuthClient VkOAuthClient = new VkOAuthClient("4559228", "pkzqWBIXivRKrN8esLTS");
 

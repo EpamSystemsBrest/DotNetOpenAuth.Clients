@@ -1,0 +1,28 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "OAuth Examples";
+    Layout = "~/Views/_Layout.cshtml";
+}
+
+<button id="Flickr" onclick=" login('Flickr')">Flickr</button>
+<button id="Vk" onclick=" login('Vk')">Vk</button>
+<button id="Google" onclick=" login('Google')">Google</button>
+<button id="Pinterest" onclick=" login('Pinterest')">Pinterest</button>
+<button id="Twitter" onclick=" login('Twitter')">Twitter</button>
+<button id="Tumblr" onclick=" login('Tumblr')">Tumblr</button>
+
+<script>
+    function login(provider) {
+        var url = '@Url.Action("Index", "Login", new { provider = "providerVariable" })';
+        location.href = url.replace("providerVariable", provider);
+        @*$.getJSON(
+            '@Url.Action("Index", "Login")',
+            { provider: provider },
+            function (result) {
+                $("#response").html(JSON.stringify(result));
+            });*@
+    }
+</script>
+
+<button id="Flickr" onclick=" login('Flickr')">Flickr</button>

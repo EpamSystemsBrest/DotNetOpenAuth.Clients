@@ -23,7 +23,7 @@ namespace Clients {
 
         #region IAuthenticationClient
 
-        public string ProviderName { get { return "VKontakte"; } }
+        public string ProviderName { get { return "Vk"; } }
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
             var uri = BuildUri(OAuthUrl, "authorize", new NameValueCollection() { 
@@ -33,7 +33,7 @@ namespace Clients {
                                 { "v",             "5.3" } 
             });
             try {
-                context.Response.Redirect(uri, false);
+                context.Response.Redirect(uri);
             } catch { //Tests context //TODO: @demns
                 context.Response.RedirectLocation = uri;
             }
