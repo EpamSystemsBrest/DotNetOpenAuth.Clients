@@ -57,16 +57,14 @@ namespace Clients {
                              "&oauth_version=1.0";
 
             var signature = GenerateSignature("GET", RequestTokenUrl, parameters, true);
-            var url = RequestTokenUrl + "?" + parameters + "&oauth_signature=" + signature;
-            return url;
+
+            return RequestTokenUrl + "?" + parameters + "&oauth_signature=" + signature;
         }
 
         private static string GetRequestStringFromUrl(string url) {
-            var client = new WebClient();
-            var request = client.DownloadString(url);
-            return request;
+            return new WebClient().DownloadString(url);
         }
-
+        
         private static string GetValueFromRequest(string request, string value) {
             return HttpUtility.ParseQueryString(request).Get(value);
         }
@@ -96,9 +94,8 @@ namespace Clients {
                              "&oauth_verifier=" + oauthVerifier +
                              "&oauth_version=1.0";
 
-            var sig = GenerateSignature("GET", AccessTokenUrl, parameters);
-            var url = AccessTokenUrl + "?" + parameters + "&oauth_signature=" + sig;
-            return url;
+            var signature = GenerateSignature("GET", AccessTokenUrl, parameters);
+            return AccessTokenUrl + "?" + parameters + "&oauth_signature=" + signature;
         }
 
         private string GenerateSignature(string httpMethod, string apiEndpoint, string parameters, bool getToken = false) {
