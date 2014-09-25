@@ -18,6 +18,7 @@ namespace DotNetOpenAuth.Clients.Samples.Controllers {
             OAuthWebSecurity.RequestAuthentication(provider, Url.Action("AuthenticationCallback"));
         }
 
+        [HttpGet]
         public ActionResult AuthenticationCallback() {
             var result = OAuthWebSecurity.VerifyAuthentication();
             if (!result.IsSuccessful) return View("Error", result.Error);

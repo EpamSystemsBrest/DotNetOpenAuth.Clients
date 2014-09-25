@@ -15,7 +15,8 @@
 <script>
     function login(provider) {
         var url = '@Url.Action("Index", "Login", new { provider = "providerVariable" })';
-        location.href = url.replace("providerVariable", provider);
+        url = url.replace("providerVariable", provider); //TODO: hack
+        location.replace(url);
         @*$.getJSON(
             '@Url.Action("Index", "Login")',
             { provider: provider },
@@ -24,5 +25,3 @@
             });*@
     }
 </script>
-
-<button id="Flickr" onclick=" login('Flickr')">Flickr</button>
