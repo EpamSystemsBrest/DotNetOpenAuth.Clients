@@ -1,0 +1,32 @@
+﻿body {
+    background-color: #f0f0f2;
+    font-family: "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+div {
+    background-color: #fff;
+    border-radius: 1em;
+    margin: 5em auto;
+    padding: 50px;
+    width: 600px;
+}
+
+a:link, a:visited {
+    color: #38488f;
+    text-decoration: none;
+}
+
+@media (max-width: 700px) {
+    body {
+        background-color: #fff;
+    }
+
+    div {
+        border-radius: 0;
+        margin: 0 auto;
+        padding: 1em;
+        width: auto;
+    }
+}
