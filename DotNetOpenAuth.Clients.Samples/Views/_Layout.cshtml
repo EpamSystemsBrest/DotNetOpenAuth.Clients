@@ -4,15 +4,24 @@
 <head>
     <meta name="viewport" content="width=device-width" />
     <title>@ViewBag.Title</title>
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="~/Content/bootstrap.min.css" rel="stylesheet" />  
+    <link rel="stylesheet" href="~/Content/font-awesome.min.css"> 
 </head>
 <body>
     <div>
-        <button id="Flickr" onclick="login('Flickr')">Flickr</button>
-        <button id="Vk" onclick="login('Vk')">Vk</button>
-        <button id="Google" onclick="login('Google')">Google</button>
-        <button id="Pinterest" onclick="login('Pinterest')">Pinterest</button>
-        <button id="Twitter" onclick="login('Twitter')">Twitter</button>
-        <button id="Tumblr" onclick="login('Tumblr')">Tumblr</button>
+        <nav class="navbar-wrapper"  role="navigation">
+        <div class="container" style="width:auto">
+          <ul class="nav navbar-nav">
+             <li><a onclick=" login('Twitter')"><i class="fa fa-twitter fa-3x"></i></a></li>
+             <li><a onclick=" login('Google')"><i class="fa fa-google-plus fa-3x"></i></a></li>
+             <li><a onclick=" login('Flickr')"><i class="fa fa-flickr fa-3x"></i></a></li>
+             <li><a onclick=" login('Pinterest')"><i class="fa fa-pinterest fa-3x"></i></a></li>
+             <li><a onclick=" login('Tumblr')"><i class="fa fa-tumblr fa-3x"></i></a></li>
+             <li><a onclick=" login('Vk')"><i class="fa fa-vk fa-3x"></i></a></li>
+           </ul>
+       </div>
+    </nav>    
 
         @RenderBody()
     </div>
