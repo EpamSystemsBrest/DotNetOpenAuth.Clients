@@ -6,7 +6,6 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Web;
-using System.Web.Script.Serialization;
 using DotNetOpenAuth.AspNet;
 
 namespace DotNetOpenAuth.Clients {
@@ -71,10 +70,10 @@ namespace DotNetOpenAuth.Clients {
                 {"client_id", _appId},
                 {"client_secret", _appSecret},
                 {"code", code},
-                {"redirect_uri", HttpUtility.UrlEncode(RemoveUriParameter(context.Request.Url, "code"))}
+                {"redirect_uri", HttpUtility.UrlEncode(OAuthHelpers.RemoveUriParameter(context.Request.Url, "code"))}
             });
 
-            return DeserializeJson<AccessToken>(Load(address));
+            return OAuthHelpers.DeserializeJson<AccessToken>(OAuthHelpers.Load(address));
         }
 
         private static UserData GetUserData(AccessToken accessToken) {
@@ -83,33 +82,7 @@ namespace DotNetOpenAuth.Clients {
                 {"uids", accessToken.user_id}
             });
 
-            var response = Load(address);
-            return DeserializeJson<UsersData>(response).response.First();
-        }
-
-        private static string Load(string address) {
-            var request = WebRequest.Create(address) as HttpWebRequest;
-            using (var response = request.GetResponse() as HttpWebResponse) {
-                using (var reader = new StreamReader(response.GetResponseStream())) {
-                    return reader.ReadToEnd();
-                }
-            }
-        }
-
-        private static string RemoveUriParameter(Uri uri, string uriParameterName) {
-            var valueCollection = HttpUtility.ParseQueryString(uri.Query);
-
-            if (!string.IsNullOrEmpty(valueCollection[uriParameterName]))
-                valueCollection.Remove(uriParameterName);
-
-            if (valueCollection.HasKeys())
-                return uri.GetLeftPart(UriPartial.Path) + "?" + valueCollection;
-            return uri.GetLeftPart(UriPartial.Path);
-        }
-
-        private static T DeserializeJson<T>(string input) {
-            var serializer = new JavaScriptSerializer();
-            return serializer.Deserialize<T>(input);
+            return OAuthHelpers.DeserializeJson<UsersData>(OAuthHelpers.Load(address)).response.First();
         }
 
         private class AccessToken {
