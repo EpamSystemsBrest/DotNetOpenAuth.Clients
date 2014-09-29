@@ -2,7 +2,7 @@
 using System.Web;
 using DotNetOpenAuth.AspNet;
 
-namespace Clients {
+namespace DotNetOpenAuth.Clients {
     public class PinterestOAuthClient : IAuthenticationClient {
 
         #region IAuthenticationClient

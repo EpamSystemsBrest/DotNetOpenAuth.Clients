@@ -1,5 +1,4 @@
-﻿using Clients;
-using Microsoft.Web.WebPages.OAuth;
+﻿using Microsoft.Web.WebPages.OAuth;
 
 namespace DotNetOpenAuth.Clients.Samples {
     public class AuthConfig {

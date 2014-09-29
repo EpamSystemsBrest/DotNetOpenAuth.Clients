@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 
-namespace Clients {
+namespace DotNetOpenAuth.Clients {
     public class FlickrOAuthClient : IAuthenticationClient {
         private const string RequestTokenUrl = "https://www.flickr.com/services/oauth/request_token";
         private const string AccessTokenUrl = "https://www.flickr.com/services/oauth/access_token";
@@ -64,7 +64,7 @@ namespace Clients {
         private static string GetRequestStringFromUrl(string url) {
             return new WebClient().DownloadString(url);
         }
-        
+
         private static string GetValueFromRequest(string request, string value) {
             return HttpUtility.ParseQueryString(request).Get(value);
         }
