@@ -1,5 +1,4 @@
-﻿using Clients;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DotNetOpenAuth.Clients.Tests {
     [TestClass]

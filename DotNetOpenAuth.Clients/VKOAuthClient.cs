@@ -26,7 +26,7 @@ namespace DotNetOpenAuth.Clients {
         public string ProviderName { get { return "Vk"; } }
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
-            var uri = BuildUri(OAuthUrl, "authorize", new NameValueCollection() { 
+            var uri = OAuthHelpers.BuildUri(OAuthUrl, "authorize", new NameValueCollection() { 
                                 { "client_id",     _appId },
                                 { "redirect_uri" , HttpUtility.UrlEncode(returnUrl.AbsoluteUri) },
                                 { "response_type", "code" },
@@ -64,19 +64,9 @@ namespace DotNetOpenAuth.Clients {
 
         #endregion IAuthenticationClient
 
-        private UserData GetUserData(AccessToken accessToken) {
-            var address = BuildUri(ApiUrl, "method/users.get", new NameValueCollection()
-            {
-                {"uids", accessToken.user_id}
-            });
-
-            string response = Load(address);
-            return DeserializeJson<UsersData>(response).response.First();
-        }
-
         private AccessToken GetAccessToken(HttpContextBase context) {
             var code = context.Request["code"];
-            var address = BuildUri(OAuthUrl, "access_token", new NameValueCollection()
+            var address = OAuthHelpers.BuildUri(OAuthUrl, "access_token", new NameValueCollection()
             {
                 {"client_id", _appId},
                 {"client_secret", _appSecret},
@@ -87,16 +77,14 @@ namespace DotNetOpenAuth.Clients {
             return DeserializeJson<AccessToken>(Load(address));
         }
 
-        private string BuildUri(string url, string path, NameValueCollection query) {
-            var uriBuilder = new UriBuilder(url) {
-                Path = path,
-                Query = ConstructQueryString(query)
-            };
-            return uriBuilder.ToString();
-        }
+        private static UserData GetUserData(AccessToken accessToken) {
+            var address = OAuthHelpers.BuildUri(ApiUrl, "method/users.get", new NameValueCollection()
+            {
+                {"uids", accessToken.user_id}
+            });
 
-        private static String ConstructQueryString(NameValueCollection parameters) {
-            return String.Join("&", (from string name in parameters select String.Concat(name, "=", parameters[name])).ToArray());
+            var response = Load(address);
+            return DeserializeJson<UsersData>(response).response.First();
         }
 
         private static string Load(string address) {

@@ -26,6 +26,7 @@ namespace DotNetOpenAuth.Clients.Samples {
             OAuthWebSecurity.RegisterClient(new TumblrOAuthClient());
             OAuthWebSecurity.RegisterClient(new TwitterOAuthClient());
             OAuthWebSecurity.RegisterClient(new VkOAuthClient("4559228", "pkzqWBIXivRKrN8esLTS"));
+            OAuthWebSecurity.RegisterClient(new LinkedInOAuthClient("77dcvkuxzrne0a", "3jNO4YRQxWj8Xx3B"));
         }
     }
 }

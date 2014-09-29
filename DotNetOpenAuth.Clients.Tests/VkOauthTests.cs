@@ -4,7 +4,6 @@ using System.IO;
 using System.Text;
 using System.Web;
 using System.Windows.Forms;
-using Clients;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DotNetOpenAuth.Clients.Tests {
