@@ -16,7 +16,7 @@ namespace DotNetOpenAuth.Clients {
             return uriBuilder.ToString();
         }
 
-        private static String ConstructQueryString(NameValueCollection parameters) {
+        public static String ConstructQueryString(NameValueCollection parameters) {
             return String.Join("&", (from string name in parameters select String.Concat(name, "=", parameters[name])).ToArray());
         }
 
