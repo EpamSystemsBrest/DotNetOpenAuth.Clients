@@ -25,7 +25,7 @@ namespace DotNetOpenAuth.Clients {
 
         #region IAuthenticationClient
 
-        public string ProviderName { get { return "Google"; } }
+        public string ProviderName { get { return "GooglePlus"; } }
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl)
         {
@@ -48,7 +48,7 @@ namespace DotNetOpenAuth.Clients {
         {
             var ctx = HttpContext.Current;
             var stateString = HttpUtility.UrlDecode(ctx.Request.QueryString["state"]);
-            if (stateString == null || !stateString.Contains("__provider__=Google"))
+            if (stateString == null || !stateString.Contains("__provider__=GooglePlus"))
                 return;
             var q = HttpUtility.ParseQueryString(stateString);
             q.Add(ctx.Request.QueryString);
