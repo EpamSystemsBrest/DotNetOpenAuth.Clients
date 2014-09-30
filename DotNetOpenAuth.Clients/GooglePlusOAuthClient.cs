@@ -29,15 +29,31 @@ namespace DotNetOpenAuth.Clients {
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl)
         {
+            var pr = "&__provider__=" + HttpUtility.ParseQueryString(returnUrl.Query).Get("__provider__");
+            var sid = "&__sid__=" + HttpUtility.ParseQueryString(returnUrl.Query).Get("__sid__");
+
             var redirectUri = BuildUri(OAuthUrl, "auth", new NameValueCollection()
             {
                 {"client_id", _appId},
                 {"redirect_uri", returnUrl.GetLeftPart(UriPartial.Path)},
                 {"response_type", "code"},                
-                {"scope", "profile"}
+                {"scope", "profile"},
+                {"state", HttpUtility.UrlEncode(pr+sid)}
             });
 
             context.Response.Redirect(redirectUri);
+        }
+
+        public static void RewriteRequest()
+        {
+            var ctx = HttpContext.Current;
+            var stateString = HttpUtility.UrlDecode(ctx.Request.QueryString["state"]);
+            if (stateString == null || !stateString.Contains("__provider__=Google"))
+                return;
+            var q = HttpUtility.ParseQueryString(stateString);
+            q.Add(ctx.Request.QueryString);
+            q.Remove("state");
+            ctx.RewritePath(ctx.Request.Path + "?" + q);
         }
 
         public AuthenticationResult VerifyAuthentication(HttpContextBase context)

@@ -20,6 +20,7 @@ namespace DotNetOpenAuth.Clients.Samples.Controllers {
 
         [HttpGet]
         public ActionResult AuthenticationCallback() {
+            GooglePlusOAuthClient.RewriteRequest(); // HACK for Google Plus
             var result = OAuthWebSecurity.VerifyAuthentication();
             if (!result.IsSuccessful) return View("Error", result.Error);
 
