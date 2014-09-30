@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
@@ -17,7 +18,10 @@ namespace DotNetOpenAuth.Clients {
         }
 
         public static String ConstructQueryString(NameValueCollection parameters) {
-            return String.Join("&", (from string name in parameters select String.Concat(name, "=", parameters[name])).ToArray());
+            return parameters.
+                Cast<string>().
+                Aggregate(string.Empty, (current, parameter) =>
+                        current + ("&" + String.Concat(parameter, "=", parameters[parameter])));
         }
 
         public static string RemoveUriParameter(Uri uri, params string[] uriParameterName) {
@@ -34,8 +38,8 @@ namespace DotNetOpenAuth.Clients {
         }
 
         public static string Load(string address) {
-            var request = WebRequest.Create(address) as HttpWebRequest;
-            using (var response = request.GetResponse() as HttpWebResponse) {
+            var request = WebRequest.Create(address);
+            using (var response = request.GetResponse()) {
                 using (var reader = new StreamReader(response.GetResponseStream())) {
                     return reader.ReadToEnd();
                 }
