@@ -13,7 +13,6 @@ namespace DotNetOpenAuth.Clients {
         private const string RequestTokenUrl = "https://www.flickr.com/services/oauth/request_token";
         private const string AccessTokenUrl = "https://www.flickr.com/services/oauth/access_token";
         private const string AuthorizeUrl = "https://www.flickr.com/services/oauth/authorize";
-        private const string ApiUrl = "https://api.flickr.com";
         private const string SignatureMethod = "HMAC-SHA1";
 
         private readonly string _appId;
@@ -130,10 +129,12 @@ namespace DotNetOpenAuth.Clients {
             public string Username;
 
             public static UserData CreateUserInfo(string queryString) {
+                var queryCollection = HttpUtility.ParseQueryString(queryString);
+
                 return new UserData {
-                    Fullname = HttpUtility.ParseQueryString(queryString).Get("fullname"),
-                    UserNsid = HttpUtility.ParseQueryString(queryString).Get("user_nsid"),
-                    Username = HttpUtility.ParseQueryString(queryString).Get("username")
+                    Fullname = queryCollection.Get("fullname"),
+                    UserNsid = queryCollection.Get("user_nsid"),
+                    Username = queryCollection.Get("username")
                 };
             }
         }
