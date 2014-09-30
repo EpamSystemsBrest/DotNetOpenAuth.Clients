@@ -15,23 +15,23 @@ namespace DotNetOpenAuth.Clients {
         private readonly string _clientSecret;
         private string _redirectUri;
 
-        #region IAuthenticationClient
-
-        public string ProviderName { get { return "Instagram"; } }
-
         public InstagramOAuthClient(string clientId, string clientSecret) {
             _clientId = clientId;
             _clientSecret = clientSecret;
         }
+
+        #region IAuthenticationClient
+
+        public string ProviderName { get { return "Instagram"; } }
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
             _redirectUri = returnUrl.AbsoluteUri;
 
             var uri = OAuthHelpers.BuildUri(OAuthUrl, "/oauth/authorize/", new NameValueCollection()
             {
-                                { "client_id",     _clientId },
-                                { "redirect_uri",  HttpUtility.UrlEncode(_redirectUri) },
-                                { "response_type", "code" }
+                                { "client_id",      _clientId },
+                                { "redirect_uri",   HttpUtility.UrlEncode(_redirectUri) },
+                                { "response_type",  "code" }
             });
 
             try {
@@ -63,27 +63,23 @@ namespace DotNetOpenAuth.Clients {
         #endregion
 
         private AccessInfo GetAccessInfo(HttpContextBase context) {
-            try {
-                byte[] response;
-                using (var client = new WebClient()) {
+            var response = PostResponse(context, OAuthUrl + "/oauth/access_token/");
+            return OAuthHelpers.DeserializeJson<AccessInfo>(response);
+        }
 
-                    response = client.UploadValues(OAuthUrl + "/oauth/access_token/", new NameValueCollection()
-                   {
-                       { "client_id",     _clientId },
-                       { "client_secret", _clientSecret },
-                       { "grant_type",    "authorization_code" },
-                       { "redirect_uri",  _redirectUri  },
-                       { "code",          context.Request["code"] },
-                   });
-                }
-
-                var stringResponse = System.Text.Encoding.UTF8.GetString(response);
-
-                return OAuthHelpers.DeserializeJson<AccessInfo>(stringResponse);
-            } catch (WebException ex) {
-                var responseStream = (MemoryStream)ex.Response.GetResponseStream();
-                throw new Exception(Encoding.UTF8.GetString(responseStream.ToArray()));
+        private string PostResponse(HttpContextBase context, string fullOAuthUrl) {
+            byte[] response;
+            using (var client = new WebClient()) {
+                response = client.UploadValues(fullOAuthUrl, new NameValueCollection()
+                {
+                    { "client_id",       _clientId },
+                    { "client_secret",   _clientSecret },
+                    { "grant_type",      "authorization_code" },
+                    { "redirect_uri",    _redirectUri },
+                    { "code",            context.Request["code"] }
+                });
             }
+            return Encoding.UTF8.GetString(response);
         }
 
         private class AccessInfo {
