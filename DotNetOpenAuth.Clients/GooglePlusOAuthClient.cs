@@ -11,11 +11,11 @@ using DotNetOpenAuth.AspNet;
 namespace DotNetOpenAuth.Clients {
     public class GooglePlusOAuthClient : IAuthenticationClient {
 
-        private string _appId;
-        private string _appSecret;
+        private readonly string _appId;
+        private readonly string _appSecret;
 
         private const string OAuthUrl = "https://accounts.google.com/o/oauth2/";
-        private const string apiUrl = "https://www.googleapis.com/oauth2/v1/";
+        private const string ApiUrl = "https://www.googleapis.com/oauth2/v1/";
 
         public GooglePlusOAuthClient(string appId, string appSecret)
         {
@@ -29,8 +29,8 @@ namespace DotNetOpenAuth.Clients {
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl)
         {
-            var pr = "&__provider__=" + HttpUtility.ParseQueryString(returnUrl.Query).Get("__provider__");
-            var sid = "&__sid__=" + HttpUtility.ParseQueryString(returnUrl.Query).Get("__sid__");
+            var pr = "&__provider__=" + OAuthHelpers.ParseQueryString(returnUrl.Query, "__provider__");
+            var sid = "&__sid__=" + OAuthHelpers.ParseQueryString(returnUrl.Query, "__sid__");
 
             var redirectUri = BuildUri(OAuthUrl, "auth", new NameValueCollection()
             {
@@ -100,7 +100,7 @@ namespace DotNetOpenAuth.Clients {
                  { "redirect_uri", returnUrl.GetLeftPart(UriPartial.Path)},
             };
 
-            var request = (HttpWebRequest)WebRequest.Create(BuildUri(OAuthUrl, "token"));
+            var request = WebRequest.Create(BuildUri(OAuthUrl, "token"));
             request.Method = "POST";
             request.ContentType = "application/x-www-form-urlencoded";
             var dataPost = Encoding.ASCII.GetBytes(OAuthHelpers.ConstructQueryString(param));
@@ -117,10 +117,10 @@ namespace DotNetOpenAuth.Clients {
             return OAuthHelpers.DeserializeJson<AccessToken>(responseString);
         }
 
-        private UserData GetUserData(string accessToken)
+        private static UserData GetUserData(string accessToken)
         {
-            var uri = BuildUri(apiUrl, "userinfo", new NameValueCollection { { "access_token", accessToken } }); 
-            return OAuthHelpers.DeserializeJson<UserData>(OAuthHelpers.Load(uri));
+            var uri = BuildUri(ApiUrl, "userinfo", new NameValueCollection { { "access_token", accessToken } });
+            return OAuthHelpers.DeserializeJsonOnLoad<UserData>(uri);
         }
 
         private static string BuildUri(string url, string path, NameValueCollection query = null)

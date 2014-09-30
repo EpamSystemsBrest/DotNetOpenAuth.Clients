@@ -46,5 +46,14 @@ namespace DotNetOpenAuth.Clients {
             var serializer = new JavaScriptSerializer();
             return serializer.Deserialize<T>(input);
         }
+
+        public static T DeserializeJsonOnLoad<T>(string url) {
+            return DeserializeJson<T>(Load(url));
+        }
+
+        public static string ParseQueryString(string query, string param) {
+            return HttpUtility.ParseQueryString(query).Get(param);
+        }
+        
     }
 }
