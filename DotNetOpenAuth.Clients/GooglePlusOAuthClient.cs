@@ -15,12 +15,12 @@ namespace DotNetOpenAuth.Clients {
         private string _appSecret;
 
         private const string OAuthUrl = "https://accounts.google.com/o/oauth2/";
-        private const string apiUri = "https://www.googleapis.com/oauth2/v1/";
+        private const string apiUrl = "https://www.googleapis.com/oauth2/v1/";
 
-        public GooglePlusOAuthClient(string _appId, string _appSecret)
+        public GooglePlusOAuthClient(string appId, string appSecret)
         {
-            this._appId = _appId;
-            this._appSecret = _appSecret;
+            this._appId = appId;
+            this._appSecret = appSecret;
         }
 
         #region IAuthenticationClient
@@ -43,22 +43,9 @@ namespace DotNetOpenAuth.Clients {
 
             context.Response.Redirect(redirectUri);
         }
-
-        public static void RewriteRequest()
-        {
-            var ctx = HttpContext.Current;
-            var stateString = HttpUtility.UrlDecode(ctx.Request.QueryString["state"]);
-            if (stateString == null || !stateString.Contains("__provider__=GooglePlus"))
-                return;
-            var q = HttpUtility.ParseQueryString(stateString);
-            q.Add(ctx.Request.QueryString);
-            q.Remove("state");
-            ctx.RewritePath(ctx.Request.Path + "?" + q);
-        }
-
+           
         public AuthenticationResult VerifyAuthentication(HttpContextBase context)
         {
-            // WTF : почему оно сюда не заходит? 
             try
             {
                 string authorizationCode = context.Request["code"];
@@ -89,6 +76,18 @@ namespace DotNetOpenAuth.Clients {
         }
 
         #endregion
+        
+        public static void RewriteRequest()
+        {
+            var ctx = HttpContext.Current;
+            var stateString = HttpUtility.UrlDecode(ctx.Request.QueryString["state"]);
+            if (stateString == null || !stateString.Contains("__provider__=GooglePlus"))
+                return;
+            var q = HttpUtility.ParseQueryString(stateString);
+            q.Add(ctx.Request.QueryString);
+            q.Remove("state");
+            ctx.RewritePath(ctx.Request.Path + "?" + q);
+        }
 
         private AccessToken GetAccessToken(string authorizationCode, Uri returnUrl)
         {
@@ -101,7 +100,7 @@ namespace DotNetOpenAuth.Clients {
                  { "redirect_uri", returnUrl.GetLeftPart(UriPartial.Path)},
             };
 
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(BuildUri(OAuthUrl, "token"));
+            var request = (HttpWebRequest)WebRequest.Create(BuildUri(OAuthUrl, "token"));
             request.Method = "POST";
             request.ContentType = "application/x-www-form-urlencoded";
             var dataPost = Encoding.ASCII.GetBytes(OAuthHelpers.ConstructQueryString(param));
@@ -118,9 +117,9 @@ namespace DotNetOpenAuth.Clients {
             return OAuthHelpers.DeserializeJson<AccessToken>(responseString);
         }
 
-        private UserData GetUserData(string access_token)
+        private UserData GetUserData(string accessToken)
         {
-            var uri = BuildUri(apiUri, "userinfo", new NameValueCollection { { "access_token", access_token } }); 
+            var uri = BuildUri(apiUrl, "userinfo", new NameValueCollection { { "access_token", accessToken } }); 
             return OAuthHelpers.DeserializeJson<UserData>(OAuthHelpers.Load(uri));
         }
 
