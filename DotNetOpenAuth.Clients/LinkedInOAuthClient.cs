@@ -15,8 +15,8 @@ namespace DotNetOpenAuth.Clients {
         private readonly string _appKey;
         private readonly string _appSecret;
 
-        public LinkedInOAuthClient(string apiKey, string secretKey) {
-            _appKey = apiKey;
+        public LinkedInOAuthClient(string appKey, string secretKey) {
+            _appKey = appKey;
             _appSecret = secretKey;
         }
 

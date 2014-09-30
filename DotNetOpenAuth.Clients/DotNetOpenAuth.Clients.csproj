@@ -134,6 +134,7 @@
     <Compile Include="Default.cs" />
     <Compile Include="FlickrOAuthClient.cs" />
     <Compile Include="GooglePlusOAuthClient.cs" />
+    <Compile Include="InstagramOAuthClient.cs" />
     <Compile Include="LinkedInOAuthClient.cs" />
     <Compile Include="OAuthHelpers.cs" />
     <Compile Include="PinterestOAuthClient.cs" />
