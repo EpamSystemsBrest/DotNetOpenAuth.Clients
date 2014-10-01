@@ -14,13 +14,13 @@ namespace DotNetOpenAuth.Clients {
         private readonly string _appId;
         private readonly string _appSecret;
 
-        private const string OAuthUrl = "https://accounts.google.com/o/oauth2/";
-        private const string ApiUrl = "https://www.googleapis.com/oauth2/v1/";
+        private const string OAuthUrl = "https://accounts.google.com/";
+        private const string ApiUrl = "https://www.googleapis.com/";
 
         public GooglePlusOAuthClient(string appId, string appSecret)
         {
-            this._appId = appId;
-            this._appSecret = appSecret;
+            _appId = appId;
+            _appSecret = appSecret;
         }
 
         #region IAuthenticationClient
@@ -32,7 +32,7 @@ namespace DotNetOpenAuth.Clients {
             var pr = "&__provider__=" + OAuthHelpers.ParseQueryString(returnUrl.Query, "__provider__");
             var sid = "&__sid__=" + OAuthHelpers.ParseQueryString(returnUrl.Query, "__sid__");
 
-            var redirectUri = BuildUri(OAuthUrl, "auth", new NameValueCollection()
+            var redirectUri = OAuthHelpers.BuildUri(OAuthUrl, "o/oauth2/auth", new NameValueCollection
             {
                 {"client_id", _appId},
                 {"redirect_uri", returnUrl.GetLeftPart(UriPartial.Path)},
@@ -48,7 +48,7 @@ namespace DotNetOpenAuth.Clients {
         {
             try
             {
-                string authorizationCode = context.Request["code"];
+                var authorizationCode = context.Request["code"];
                 var accessToken = GetAccessToken(authorizationCode, context.Request.Url);
                 var userData = GetUserData(accessToken.access_token);
 
@@ -91,7 +91,7 @@ namespace DotNetOpenAuth.Clients {
 
         private AccessToken GetAccessToken(string authorizationCode, Uri returnUrl)
         {
-            var param = new NameValueCollection()
+            var param = new NameValueCollection
             {
                  { "grant_type", "authorization_code" },
                  { "code", authorizationCode },
@@ -100,7 +100,8 @@ namespace DotNetOpenAuth.Clients {
                  { "redirect_uri", returnUrl.GetLeftPart(UriPartial.Path)},
             };
 
-            var request = WebRequest.Create(BuildUri(OAuthUrl, "token"));
+            // TODO :
+            var request = WebRequest.Create(new UriBuilder(OAuthUrl){Path = "o/oauth2/token"}.ToString());
             request.Method = "POST";
             request.ContentType = "application/x-www-form-urlencoded";
             var dataPost = Encoding.ASCII.GetBytes(OAuthHelpers.ConstructQueryString(param));
@@ -119,16 +120,8 @@ namespace DotNetOpenAuth.Clients {
 
         private static UserData GetUserData(string accessToken)
         {
-            var uri = BuildUri(ApiUrl, "userinfo", new NameValueCollection { { "access_token", accessToken } });
-            return OAuthHelpers.DeserializeJsonOnLoad<UserData>(uri);
-        }
-
-        private static string BuildUri(string url, string path, NameValueCollection query = null)
-        {
-            if (query == null)
-                return string.Format("{0}{1}", url, path);
-
-            return string.Format("{0}{1}?{2}", url, path, OAuthHelpers.ConstructQueryString(query));
+            var uri = OAuthHelpers.BuildUri(ApiUrl, "oauth2/v1/userinfo", new NameValueCollection { { "access_token", accessToken } });
+            return OAuthHelpers.DeserializeJsonWithLoad<UserData>(uri);
         }
 
         private class AccessToken

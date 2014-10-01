@@ -132,6 +132,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Default.cs" />
+    <Compile Include="FacebookOAuthClient.cs" />
     <Compile Include="FlickrOAuthClient.cs" />
     <Compile Include="GooglePlusOAuthClient.cs" />
     <Compile Include="InstagramOAuthClient.cs" />

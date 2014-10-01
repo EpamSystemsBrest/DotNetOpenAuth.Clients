@@ -1,45 +1,44 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Web;
 using DotNetOpenAuth.AspNet;
+using System.Text;
 
-namespace DotNetOpenAuth.Clients {
-    public class TwitterOAuthClient : IAuthenticationClient {
+namespace DotNetOpenAuth.Clients
+{
+    public class TwitterOAuthClient : IAuthenticationClient
+    {
 
         #region IAuthenticationClient
 
         public string ProviderName { get { return "Twitter"; } }
 
-        public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
+        public void RequestAuthentication(HttpContextBase context, Uri returnUrl)
+        {
 
             // пока все что вроде бы как работает это 
             // сигнатура остольное для меня загадка
-            
+
             //var _target = new OAuthCreationService();
 
             //string url = "https://api.twitter.com/1/users/lookup.json";
 
             //string signature = _target.CreateSignature(url);
-            
-            
-            
-            
-            
+
+
+
+
+
             throw new NotImplementedException();
         }
 
-        public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
+        public AuthenticationResult VerifyAuthentication(HttpContextBase context)
+        {
             throw new NotImplementedException();
         }
 
         #endregion
-
-
-
-
-
-
-
-
 
     }
 
@@ -156,19 +155,4 @@ namespace DotNetOpenAuth.Clients {
             return authorizationHeaderParams;
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
