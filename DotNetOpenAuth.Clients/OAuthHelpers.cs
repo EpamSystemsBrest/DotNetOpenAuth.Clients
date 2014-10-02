@@ -50,7 +50,7 @@ namespace DotNetOpenAuth.Clients {
             return serializer.Deserialize<T>(input);
         }
 
-        public static T DeserializeJsonOnLoad<T>(string url) {
+        public static T DeserializeJsonWithLoad<T>(string url) {
             return DeserializeJson<T>(Load(url));
         }
 
