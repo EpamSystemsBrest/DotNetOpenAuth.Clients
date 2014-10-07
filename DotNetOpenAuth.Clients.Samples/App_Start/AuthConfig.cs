@@ -25,7 +25,7 @@ namespace DotNetOpenAuth.Clients.Samples {
             OAuthWebSecurity.RegisterClient(new GooglePlusOAuthClient("1067161712157-p1969b3q6q18v0c2anp97iarthtrmis2.apps.googleusercontent.com", "VE2aut2r8nKrmoYGGjLyrilt"));
             OAuthWebSecurity.RegisterClient(new PinterestOAuthClient());
             OAuthWebSecurity.RegisterClient(new TumblrOAuthClient("fq4O66FfwrEoXISW8xKaeGh8LOQYBHV8IBH9pPTkRPbxv8GW0M", "baHrYQazVReM0CDomuTljbo5yNA8ZvAejxovMLiMoak78AF0jk"));
-            OAuthWebSecurity.RegisterClient(new TwitterOAuthClient());
+            OAuthWebSecurity.RegisterClient(new TwitterOAuthClient("lFieIqoyzN6lvDqQPizYeGh2y", "WdPOrgATGvdDN1t3VZxu36EjqLfNpX4zhVAeiFJnWyI2VMRGCH"));
             OAuthWebSecurity.RegisterClient(new VkOAuthClient("4559228", "pkzqWBIXivRKrN8esLTS"));
             OAuthWebSecurity.RegisterClient(new LinkedInOAuthClient("77dcvkuxzrne0a", "3jNO4YRQxWj8Xx3B"));
             OAuthWebSecurity.RegisterClient(new InstagramOAuthClient("36342c21bc7b4a8a8ea50669d39549c8", "f2440fc49e5c49959e27fbe3410d70a5"));

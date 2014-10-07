@@ -3,12 +3,34 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Web;
 using DotNetOpenAuth.AspNet;
+using System.Text.RegularExpressions;
+using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
+using System.Net;
+using System.Collections.Generic;
 
 namespace DotNetOpenAuth.Clients
 {
     public class TwitterOAuthClient : IAuthenticationClient
     {
+
+        private const string RequestTokenUrl = "https://api.twitter.com/oauth/request_token";
+        private const string AccessTokenUrl = "https://api.twitter.com/oauth/access_token";
+        private const string AuthorizeUrl = "https://api.twitter.com/oauth/authenticate";
+        private const string SignatureMethod = "HMAC-SHA1";
+
+        private readonly string _appId;
+        private readonly string _appSecret;
+        private string _tokenSecret;
+        private readonly Random _rand = new Random();
+
+
+        public TwitterOAuthClient(string appId, string appSecret)
+        {
+            _appId = appId;
+            _appSecret = appSecret;
+        }
 
         #region IAuthenticationClient
 
@@ -16,143 +38,135 @@ namespace DotNetOpenAuth.Clients
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl)
         {
+            var url = CreateRequestTokenUrl(returnUrl);
+            var request = GetRequestStringFromUrl(url);
+            var requestToken = GetValueFromRequest(request, "oauth_token");
+            _tokenSecret = GetValueFromRequest(request, "oauth_token_secret");
 
-            // пока все что вроде бы как работает это 
-            // сигнатура остольное для меня загадка
-
-            //var _target = new OAuthCreationService();
-
-            //string url = "https://api.twitter.com/1/users/lookup.json";
-
-            //string signature = _target.CreateSignature(url);
-
-
-
-
-
-            throw new NotImplementedException();
+            HttpContext.Current.Response.Redirect(AuthorizeUrl + "?oauth_token=" + requestToken, false);
         }
 
         public AuthenticationResult VerifyAuthentication(HttpContextBase context)
         {
-            throw new NotImplementedException();
+
+            var url = CreateUserInfoUrl(context);
+            var request = GetRequestStringFromUrl(url);
+            var userData = UserData.CreateUserInfo(request);
+            return CreateAuthenticationResult(userData);
         }
 
         #endregion
 
-    }
-
-    public class OAuthCreationService
-    {
-        private readonly string _oathTimestamp;
-
-        private readonly string _oauthNonce;
-        private readonly TimeSpan _timeSpan;
-
-        public OAuthCreationService()
+        private string CreateUserInfoUrl(HttpContextBase context)
         {
-            _oauthNonce = Convert.ToBase64String(new ASCIIEncoding().GetBytes(
-                DateTime.Now.Ticks.ToString()));
-            _timeSpan = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
-            _oathTimestamp = Convert.ToInt64(_timeSpan.TotalSeconds).ToString();
+            var oauthVerifier = context.Request.QueryString["oauth_verifier"];
+            var oauthToken = context.Request.QueryString["oauth_token"];
+
+            var parameters = "oauth_consumer_key=" + _appId +
+                             "&oauth_nonce=" + GenerateNonce() +
+                             "&oauth_signature_method=HMAC-SHA1" +
+                             "&oauth_timestamp=" + GetTimestamp() +
+                             "&oauth_token=" + oauthToken +
+                             "&oauth_verifier=" + oauthVerifier +
+                             "&oauth_version=1.0";
+
+            var signature = GenerateSignature("GET", AccessTokenUrl, parameters);
+            return AccessTokenUrl + "?" + parameters + "&oauth_signature=" + signature;
         }
 
-        public string OAuthTimeStamp
+        private class UserData
         {
-            get { return _oathTimestamp; }
-        }
 
-        public string OauthSignatureMethod
-        {
-            get { return "HMAC-SHA1"; }
-        }
+            public string UserId;
+            public string ScreenName;
 
-        public string OauthConsumerKey
-        {
-            get { return "B8AbjInmTjtVptx7SR7t3tpPq"; }
-        }
-
-        public string OauthToken
-        {
-            get
+            public static UserData CreateUserInfo(string queryString)
             {
-                return "2829540260-psKZdihcR8fqsW1ChFwVJ1rodeEu21AzQgUhhJK";
+                var queryCollection = HttpUtility.ParseQueryString(queryString);
+
+                return new UserData
+                {
+                    UserId = queryCollection.Get("user_id"),
+                    ScreenName = queryCollection.Get("screen_name")
+                };
             }
         }
 
-        public string OathVersion
+        private AuthenticationResult CreateAuthenticationResult(UserData userData)
         {
-            get { return "1.0"; }
+            return new AuthenticationResult(
+                isSuccessful: true,
+                provider: ProviderName,
+                providerUserId: userData.UserId,
+                userName: userData.ScreenName,
+                extraData: new Dictionary<string, string>());
         }
 
-        public string OAuthNonce
+        private static string GetValueFromRequest(string request, string value)
         {
-            get { return _oauthNonce; }
+            return HttpUtility.ParseQueryString(request).Get(value);
         }
 
-
-        public string CreateSignature(string url)
+        private static string GetRequestStringFromUrl(string url)
         {
-            var dictionary = new SortedDictionary<string, string>
-                                 {
-                                     {"oauth_version", OathVersion},
-                                     {"oauth_consumer_key", OauthConsumerKey},
-                                     {"oauth_nonce", _oauthNonce},
-                                     {"oauth_signature_method", OauthSignatureMethod},
-                                     {"oauth_timestamp", _oathTimestamp},
-                                     {"oauth_token", OauthToken}
-                                 };
-            var sb = new StringBuilder();
-            sb.Append("POST&");
-            sb.Append(Uri.EscapeDataString(url));
-            sb.Append("&");
-            foreach (var entry in dictionary)
+            return new WebClient().DownloadString(url);
+        }
+
+        private string CreateRequestTokenUrl(Uri returnUrl)
+        {
+            var parameters = "oauth_callback=" + Encode(returnUrl.AbsoluteUri) +
+                             "&oauth_consumer_key=" + _appId +
+                             "&oauth_nonce=" + GenerateNonce() +
+                             "&oauth_signature_method=" + SignatureMethod +
+                             "&oauth_timestamp=" + GetTimestamp() +
+                             "&oauth_version=1.0";
+
+            var signature = GenerateSignature("GET", RequestTokenUrl, parameters, true);
+
+            return RequestTokenUrl + "?" + parameters + "&oauth_signature=" + signature;
+        }
+
+        private string GenerateSignature(string httpMethod, string apiEndpoint, string parameters, bool getToken = false)
+        {
+            var basestring = httpMethod + "&" + Encode(apiEndpoint) + "&" + Encode(parameters);
+
+            var encoding = new ASCIIEncoding();
+
+            var key = getToken ? _appSecret + "&" : _appSecret + "&" + _tokenSecret;
+            var keyByte = encoding.GetBytes(key);
+
+            var messageBytes = encoding.GetBytes(basestring);
+            string signature;
+            using (var hmacsha1 = new HMACSHA1(keyByte))
             {
-                sb.Append(Uri.EscapeDataString(string.Format("{0}={1}&", entry.Key, entry.Value)));
+                byte[] hashmessage = hmacsha1.ComputeHash(messageBytes);
+                signature = Convert.ToBase64String(hashmessage);
             }
-            string baseString = sb.ToString().Substring(0, sb.Length - 3);
-
-            string signingKey =
-                Uri.EscapeDataString(OauthConsumerKey) + "&" +
-                Uri.EscapeDataString(OauthToken);
-
-            var hasher = new HMACSHA1(
-                new ASCIIEncoding().GetBytes(signingKey));
-
-            string signatureString = Convert.ToBase64String(
-                hasher.ComputeHash(
-                    new ASCIIEncoding().GetBytes(baseString)));
-
-            return signatureString;
+            return Encode(signature);
         }
 
-        public string CreateAuthorizationHeaderParameter(string signature, string timeStamp)
+        private static string GetTimestamp()
         {
-            string authorizationHeaderParams = String.Empty;
-            authorizationHeaderParams += "OAuth ";
-            authorizationHeaderParams += "oauth_consumer_key="
-                                         + "\"" + Uri.EscapeDataString(OauthConsumerKey) + "\",";
-
-            authorizationHeaderParams += "oauth_nonce=" + "\"" +
-                                         Uri.EscapeDataString(OAuthNonce) + "\",";
-
-            authorizationHeaderParams += "oauth_signature=" + "\""
-                                         + Uri.EscapeDataString(signature) + "\",";
-
-            authorizationHeaderParams +=
-                "oauth_signature_method=" + "\"" +
-                Uri.EscapeDataString(OauthSignatureMethod) +
-                "\",";
-
-            authorizationHeaderParams += "oauth_timestamp=" + "\"" +
-                                         Uri.EscapeDataString(timeStamp) + "\",";
-
-            authorizationHeaderParams += "oauth_token=" + "\"" +
-                                         Uri.EscapeDataString(OauthToken) + "\",";
-
-            authorizationHeaderParams += "oauth_version=" + "\"" +
-                                         Uri.EscapeDataString(OathVersion) + "\"";
-            return authorizationHeaderParams;
+            return ((int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds).
+                ToString(CultureInfo.InvariantCulture);
         }
+
+        private string GenerateNonce()
+        {
+            return _rand.Next(999999).ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static string Encode(string str)
+        {
+            var charClass = String.Format("0-9a-zA-Z{0}", Regex.Escape("-_.!~*'()"));
+            return Regex.Replace(str, String.Format("[^{0}]", charClass), EncodeEvaluator);
+        }
+
+        private static string EncodeEvaluator(Match match)
+        {
+            return (match.Value == " ") ? "+" : String.Format("%{0:X2}", Convert.ToInt32(match.Value[0]));
+        }
+
     }
+
 }
