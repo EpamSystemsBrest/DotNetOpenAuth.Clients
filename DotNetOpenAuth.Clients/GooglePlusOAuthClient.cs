@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Net;
 using System.Web;
-using System.Text;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using DotNetOpenAuth.AspNet;
@@ -14,6 +12,17 @@ namespace DotNetOpenAuth.Clients {
         private const string OAuthUrl = "https://accounts.google.com/";
         private const string ApiUrl = "https://www.googleapis.com/";
 
+        public static void RewriteRequest() { //TODO : help required
+            var context = HttpContext.Current;
+            var stateString = HttpUtility.UrlDecode(context.Request.QueryString["state"]);
+            if (stateString == null || !stateString.Contains("__provider__=GooglePlus"))
+                return;
+
+            var query = HttpUtility.ParseQueryString(stateString);
+            query.Add(context.Request.QueryString);
+            context.RewritePath(context.Request.Path + "?" + query);
+        }
+
         public GooglePlusOAuthClient(string appId, string appSecret) {
             _appId = appId;
             _appSecret = appSecret;
@@ -24,19 +33,7 @@ namespace DotNetOpenAuth.Clients {
         public string ProviderName { get { return "GooglePlus"; } }
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
-            var query = HttpUtility.ParseQueryString(returnUrl.Query);
-            var provider = "&__provider__=" + query.Get("__provider__");
-            var sid = "&__sid__=" + query.Get("__sid__");
-
-            var redirectUri = OAuthHelpers.BuildUri(OAuthUrl, "o/oauth2/auth", new NameValueCollection
-            {
-                { "client_id",       _appId },
-                { "redirect_uri",    returnUrl.GetLeftPart(UriPartial.Path) },
-                { "response_type",   "code" },                
-                { "scope",           "profile" },
-                { "state",           HttpUtility.UrlEncode(provider + sid) }
-            });
-
+            var redirectUri = CreateRedirectUri(returnUrl);
             context.Response.Redirect(redirectUri);
         }
 
@@ -50,39 +47,35 @@ namespace DotNetOpenAuth.Clients {
 
         #endregion
 
-        public static void RewriteRequest() {
-            var ctx = HttpContext.Current;
-            var stateString = HttpUtility.UrlDecode(ctx.Request.QueryString["state"]);
-            if (stateString == null || !stateString.Contains("__provider__=GooglePlus"))
-                return;
-            var q = HttpUtility.ParseQueryString(stateString);
-            q.Add(ctx.Request.QueryString);
-            q.Remove("state");
-            ctx.RewritePath(ctx.Request.Path + "?" + q);
+        private string CreateRedirectUri(Uri returnUrl) {
+            return OAuthHelpers.BuildUri(OAuthUrl, "o/oauth2/auth", new NameValueCollection
+            {
+                {"client_id", _appId},
+                {"redirect_uri", returnUrl.GetLeftPart(UriPartial.Path)},
+                {"response_type", "code"},
+                {"scope", "profile"},
+                {"state", HttpUtility.UrlEncode(returnUrl.Query)}
+            });
         }
 
         private AccessToken GetAccessToken(string authorizationCode, Uri returnUrl) {
             var param = new NameValueCollection
             {
-                 { "grant_type",    "authorization_code" },
-                 { "code",          authorizationCode },
                  { "client_id",     _appId },
                  { "client_secret", _appSecret },
+                 { "code",          authorizationCode },
+                 { "grant_type",    "authorization_code" },
                  { "redirect_uri",  returnUrl.GetLeftPart(UriPartial.Path) },
             };
 
-            return OAuthHelpers.DeserializeJson<AccessToken>(GetResponse(param));
-        }
-
-        private static string GetResponse(NameValueCollection param) {
-            using (var wb = new WebClient()) {
-                var url = (new UriBuilder(OAuthUrl) { Path = "o/oauth2/token" }.ToString());
-                return Encoding.UTF8.GetString(wb.UploadValues(url, "POST", param));
-            }
+            return OAuthHelpers.DeserializeJson<AccessToken>(OAuthHelpers.PostRequest(OAuthUrl, "o/oauth2/token", param));
         }
 
         private static UserData GetUserData(string accessToken) {
-            var uri = OAuthHelpers.BuildUri(ApiUrl, "oauth2/v1/userinfo", new NameValueCollection { { "access_token", accessToken } });
+            var uri = OAuthHelpers.BuildUri(ApiUrl, "oauth2/v1/userinfo", new NameValueCollection 
+            {
+                { "access_token", accessToken } 
+            });
             return OAuthHelpers.DeserializeJsonWithLoad<UserData>(uri);
         }
 
@@ -95,8 +88,8 @@ namespace DotNetOpenAuth.Clients {
                 extraData:
                     new Dictionary<string, string>
                     {
-                        {"LastName", userData.family_name},
-                        {"FirstName", userData.given_name}
+                        { "LastName",  userData.family_name },
+                        { "FirstName", userData.given_name }
                     });
         }
 

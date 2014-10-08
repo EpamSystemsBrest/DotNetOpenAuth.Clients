@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Web;
 using System.Web.Script.Serialization;
 
@@ -41,6 +42,13 @@ namespace DotNetOpenAuth.Clients {
                 using (var reader = new StreamReader(response.GetResponseStream())) {
                     return reader.ReadToEnd();
                 }
+            }
+        }
+
+        public static string PostRequest(string postUrl, string path, NameValueCollection param) {
+            using (var wb = new WebClient()) {
+                var url = (new UriBuilder(postUrl) { Path = path }.ToString());
+                return Encoding.UTF8.GetString(wb.UploadValues(url, "POST", param));
             }
         }
 

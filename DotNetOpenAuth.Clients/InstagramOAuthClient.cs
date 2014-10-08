@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Net;
-using System.Text;
 using System.Web;
 using DotNetOpenAuth.AspNet;
 
@@ -25,14 +23,7 @@ namespace DotNetOpenAuth.Clients {
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
             _redirectUri = returnUrl.AbsoluteUri;
-
-            var uri = OAuthHelpers.BuildUri(OAuthUrl, "/oauth/authorize/", new NameValueCollection
-            {
-                                { "client_id",      _clientId },
-                                { "redirect_uri",   HttpUtility.UrlEncode(_redirectUri) },
-                                { "response_type",  "code" }
-            });
-
+            var uri = CreateRedirectUri();
             context.Response.Redirect(uri);
         }
 
@@ -43,24 +34,26 @@ namespace DotNetOpenAuth.Clients {
 
         #endregion
 
-        private AccessInfo GetAccessInfo(HttpContextBase context) {
-            var response = PostResponse(context, OAuthUrl + "/oauth/access_token/");
-            return OAuthHelpers.DeserializeJson<AccessInfo>(response);
+        private string CreateRedirectUri() {
+            return OAuthHelpers.BuildUri(OAuthUrl, "/oauth/authorize/", new NameValueCollection
+            {
+                {"client_id", _clientId},
+                {"redirect_uri", HttpUtility.UrlEncode(_redirectUri)},
+                {"response_type", "code"}
+            });
         }
 
-        private string PostResponse(HttpContextBase context, string fullOAuthUrl) {
-            byte[] response;
-            using (var client = new WebClient()) {
-                response = client.UploadValues(fullOAuthUrl, new NameValueCollection
-                {
-                    { "client_id",       _clientId },
-                    { "client_secret",   _clientSecret },
-                    { "grant_type",      "authorization_code" },
-                    { "redirect_uri",    _redirectUri },
-                    { "code",            context.Request["code"] }
-                });
-            }
-            return Encoding.UTF8.GetString(response);
+        private AccessInfo GetAccessInfo(HttpContextBase context) {
+            var param = new NameValueCollection
+            {
+                {"client_id", _clientId},
+                {"client_secret", _clientSecret},
+                {"grant_type", "authorization_code"},
+                {"redirect_uri", _redirectUri},
+                {"code", context.Request["code"]}
+            };
+            return OAuthHelpers.DeserializeJson<AccessInfo>(
+                OAuthHelpers.PostRequest(OAuthUrl, "/oauth/access_token/", param));
         }
 
         private AuthenticationResult CreateAuthenticationResult(AccessInfo accessInfo) {
