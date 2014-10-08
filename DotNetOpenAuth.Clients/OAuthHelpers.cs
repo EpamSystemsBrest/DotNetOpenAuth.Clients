@@ -36,7 +36,7 @@ namespace DotNetOpenAuth.Clients {
             return uri.GetLeftPart(UriPartial.Path);
         }
 
-        public static string Load(string address) { //TODO: check for webclient (culture problems)
+        public static string Load(string address) { //TODO: check for webclient (currently doesn't work with russian culture)
             var request = WebRequest.Create(address);
             using (var response = request.GetResponse()) {
                 using (var reader = new StreamReader(response.GetResponseStream())) {

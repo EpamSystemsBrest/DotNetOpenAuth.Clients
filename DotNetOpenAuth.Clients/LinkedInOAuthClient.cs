@@ -51,7 +51,7 @@ namespace DotNetOpenAuth.Clients {
                 HttpUtility.UrlEncode(OAuthHelpers.RemoveUriParameter(context.Request.Url, "state", "code"));
             var address = CreateAccessTokenUri(context, redirectUri);
 
-            return OAuthHelpers.DeserializeJson<AccessToken>(OAuthHelpers.Load(address));
+            return OAuthHelpers.DeserializeJsonWithLoad<AccessToken>(address);
         }
 
         private string CreateAccessTokenUri(HttpContextBase context, string redirectUri) {
@@ -67,7 +67,7 @@ namespace DotNetOpenAuth.Clients {
 
         private static UserData GetUserData(AccessToken accessToken) {
             var address = CreateUserDataUri(accessToken);
-            return OAuthHelpers.DeserializeJson<UserData>(OAuthHelpers.Load(address));
+            return OAuthHelpers.DeserializeJsonWithLoad<UserData>(address);
         }
 
         private static string CreateUserDataUri(AccessToken accessToken) {
