@@ -3,8 +3,6 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Security.Cryptography;
-using System.Text;
 using System.Web;
 using System.Web.Script.Serialization;
 
@@ -19,10 +17,9 @@ namespace DotNetOpenAuth.Clients {
         }
 
         public static String ConstructQueryString(NameValueCollection parameters) {
-            return parameters.
-                Cast<string>().
-                Aggregate(string.Empty, (current, parameter) =>
-                        current + ("&" + String.Concat(parameter, "=", parameters[parameter])));
+            return String.Join("&",
+                parameters.Cast<string>().Select(parameter => parameter + "=" + parameters[parameter])
+                );
         }
 
         public static string RemoveUriParameter(Uri uri, params string[] uriParameterName) {
