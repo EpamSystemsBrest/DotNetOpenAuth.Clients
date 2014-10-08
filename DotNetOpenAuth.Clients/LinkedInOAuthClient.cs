@@ -22,14 +22,7 @@ namespace DotNetOpenAuth.Clients {
         public string ProviderName { get { return "LinkedIn"; } }
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
-            var uri = OAuthHelpers.BuildUri(OAuthUrl, "uas/oauth2/authorization", new NameValueCollection()
-            {
-                                { "response_type", "code" },
-                                { "client_id",     _appKey },
-                                { "state",         Guid.NewGuid().ToString("N")   },
-                                { "redirect_uri" , HttpUtility.UrlEncode(returnUrl.AbsoluteUri) }
-            });
-
+            var uri = CreateRedirectionUri(returnUrl);
             context.Response.Redirect(uri);
         }
 
@@ -42,29 +35,48 @@ namespace DotNetOpenAuth.Clients {
 
         #endregion
 
+        private string CreateRedirectionUri(Uri returnUrl) {
+            var param = new NameValueCollection {
+                {"response_type", "code"},
+                {"client_id", _appKey},
+                {"state", Guid.NewGuid().ToString("N")},
+                {"redirect_uri", HttpUtility.UrlEncode(returnUrl.AbsoluteUri)}
+            };
+
+            return OAuthHelpers.BuildUri(OAuthUrl, "uas/oauth2/authorization", param);
+        }
+
         private AccessToken GetAccessToken(HttpContextBase context) {
             var redirectUri =
                 HttpUtility.UrlEncode(OAuthHelpers.RemoveUriParameter(context.Request.Url, "state", "code"));
-            var address = OAuthHelpers.BuildUri(OAuthUrl, "uas/oauth2/accessToken", new NameValueCollection()
-            {
-                {"grant_type",    "authorization_code"},
-                {"code",          context.Request["code"]},
-                {"redirect_uri",  redirectUri},
-                {"client_id",     _appKey},
-                {"client_secret", _appSecret}
-            });
+            var address = CreateAccessTokenUri(context, redirectUri);
 
             return OAuthHelpers.DeserializeJson<AccessToken>(OAuthHelpers.Load(address));
         }
 
+        private string CreateAccessTokenUri(HttpContextBase context, string redirectUri) {
+            return OAuthHelpers.BuildUri(OAuthUrl, "uas/oauth2/accessToken", new NameValueCollection
+            {
+                { "grant_type",    "authorization_code" },
+                { "code",          context.Request["code"] },
+                { "redirect_uri",  redirectUri },
+                { "client_id",     _appKey},
+                { "client_secret", _appSecret }
+            });
+        }
+
         private static UserData GetUserData(AccessToken accessToken) {
-            var address = OAuthHelpers.BuildUri(ApiUrl, "v1/people/~", new NameValueCollection()
+            var address = CreateUserDataUri(accessToken);
+            return OAuthHelpers.DeserializeJson<UserData>(OAuthHelpers.Load(address));
+        }
+
+        private static string CreateUserDataUri(AccessToken accessToken) {
+            var address = OAuthHelpers.BuildUri(ApiUrl, "v1/people/~", new NameValueCollection
             {
                 {"oauth2_access_token", accessToken.access_token},
-                {"format",              "json"}
+                {"format", "json"}
             });
-
-            return OAuthHelpers.DeserializeJson<UserData>(OAuthHelpers.Load(address));
+            return address;
         }
 
         private AuthenticationResult CreateAuthenticationResult(UserData userData) {
@@ -72,7 +84,7 @@ namespace DotNetOpenAuth.Clients {
                 isSuccessful: true,
                 provider: ProviderName,
                 providerUserId: userData.headline,
-                userName: userData.firstName + userData.lastName,
+                userName: userData.firstName + " " + userData.lastName,
                 extraData: new Dictionary<string, string>());
         }
 
