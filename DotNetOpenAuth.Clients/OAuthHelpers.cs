@@ -3,6 +3,8 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using System.Web;
 using System.Web.Script.Serialization;
 
@@ -27,16 +29,16 @@ namespace DotNetOpenAuth.Clients {
             var valueCollection = HttpUtility.ParseQueryString(uri.Query);
 
             foreach (var str in uriParameterName) {
-                if (!string.IsNullOrEmpty(valueCollection[str]))
-                    valueCollection.Remove(str);
+                valueCollection.Remove(str);
             }
 
             if (valueCollection.HasKeys())
                 return uri.GetLeftPart(UriPartial.Path) + "?" + valueCollection;
+
             return uri.GetLeftPart(UriPartial.Path);
         }
 
-        public static string Load(string address) {
+        public static string Load(string address) { //TODO: check for webclient (culture problems)
             var request = WebRequest.Create(address);
             using (var response = request.GetResponse()) {
                 using (var reader = new StreamReader(response.GetResponseStream())) {
@@ -53,10 +55,5 @@ namespace DotNetOpenAuth.Clients {
         public static T DeserializeJsonWithLoad<T>(string url) {
             return DeserializeJson<T>(Load(url));
         }
-
-        public static string ParseQueryString(string query, string param) {
-            return HttpUtility.ParseQueryString(query).Get(param);
-        }
-        
     }
 }

@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.IO;
-using System.Net;
-using System.Text;
 using System.Web;
 using DotNetOpenAuth.AspNet;
 
@@ -27,37 +24,20 @@ namespace DotNetOpenAuth.Clients {
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
             var uri = OAuthHelpers.BuildUri(OAuthUrl, "uas/oauth2/authorization", new NameValueCollection()
             {
-                                { "response_type", "code"},
+                                { "response_type", "code" },
                                 { "client_id",     _appKey },
                                 { "state",         Guid.NewGuid().ToString("N")   },
                                 { "redirect_uri" , HttpUtility.UrlEncode(returnUrl.AbsoluteUri) }
             });
 
-            try {
-                context.Response.Redirect(uri);
-            } catch { //Tests context //TODO: @demns
-                context.Response.RedirectLocation = uri;
-            }
+            context.Response.Redirect(uri);
         }
 
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
             var accessToken = GetAccessToken(context);
             var userData = GetUserData(accessToken);
 
-            try {
-                return new AuthenticationResult(
-                    isSuccessful: true,
-                    provider: ProviderName,
-                    providerUserId: userData.headline,
-                    userName: userData.firstName + userData.lastName,
-                    extraData:
-                        new Dictionary<string, string>());
-            } catch (WebException ex) {
-                var responseStream = (MemoryStream)ex.Response.GetResponseStream();
-                throw new Exception(Encoding.UTF8.GetString(responseStream.ToArray()));
-            } catch (Exception ex) {
-                return new AuthenticationResult(ex);
-            }
+            return CreateAuthenticationResult(userData);
         }
 
         #endregion
@@ -85,6 +65,15 @@ namespace DotNetOpenAuth.Clients {
             });
 
             return OAuthHelpers.DeserializeJson<UserData>(OAuthHelpers.Load(address));
+        }
+
+        private AuthenticationResult CreateAuthenticationResult(UserData userData) {
+            return new AuthenticationResult(
+                isSuccessful: true,
+                provider: ProviderName,
+                providerUserId: userData.headline,
+                userName: userData.firstName + userData.lastName,
+                extraData: new Dictionary<string, string>());
         }
 
         private class AccessToken {

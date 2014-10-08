@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.IO;
 using System.Net;
 using System.Text;
 using System.Web;
@@ -27,37 +26,19 @@ namespace DotNetOpenAuth.Clients {
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
             _redirectUri = returnUrl.AbsoluteUri;
 
-            var uri = OAuthHelpers.BuildUri(OAuthUrl, "/oauth/authorize/", new NameValueCollection()
+            var uri = OAuthHelpers.BuildUri(OAuthUrl, "/oauth/authorize/", new NameValueCollection
             {
                                 { "client_id",      _clientId },
                                 { "redirect_uri",   HttpUtility.UrlEncode(_redirectUri) },
                                 { "response_type",  "code" }
             });
 
-            try {
-                context.Response.Redirect(uri);
-            } catch { //Tests context //TODO: @demns
-                context.Response.RedirectLocation = uri;
-            }
+            context.Response.Redirect(uri);
         }
 
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
             var accessInfo = GetAccessInfo(context);
-
-            try {
-                return new AuthenticationResult(
-                    isSuccessful: true,
-                    provider: ProviderName,
-                    providerUserId: accessInfo.user.id,
-                    userName: accessInfo.user.username,
-                    extraData:
-                        new Dictionary<string, string>());
-            } catch (WebException ex) {
-                var responseStream = (MemoryStream)ex.Response.GetResponseStream();
-                throw new Exception(Encoding.UTF8.GetString(responseStream.ToArray()));
-            } catch (Exception ex) {
-                return new AuthenticationResult(ex);
-            }
+            return CreateAuthenticationResult(accessInfo);
         }
 
         #endregion
@@ -70,7 +51,7 @@ namespace DotNetOpenAuth.Clients {
         private string PostResponse(HttpContextBase context, string fullOAuthUrl) {
             byte[] response;
             using (var client = new WebClient()) {
-                response = client.UploadValues(fullOAuthUrl, new NameValueCollection()
+                response = client.UploadValues(fullOAuthUrl, new NameValueCollection
                 {
                     { "client_id",       _clientId },
                     { "client_secret",   _clientSecret },
@@ -80,6 +61,15 @@ namespace DotNetOpenAuth.Clients {
                 });
             }
             return Encoding.UTF8.GetString(response);
+        }
+
+        private AuthenticationResult CreateAuthenticationResult(AccessInfo accessInfo) {
+            return new AuthenticationResult(
+                isSuccessful: true,
+                provider: ProviderName,
+                providerUserId: accessInfo.user.id,
+                userName: accessInfo.user.username,
+                extraData: new Dictionary<string, string>());
         }
 
         private class AccessInfo {
