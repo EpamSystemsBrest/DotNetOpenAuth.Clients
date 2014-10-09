@@ -6,16 +6,8 @@ namespace DotNetOpenAuth.Clients.Samples.Controllers {
     public class LoginController : Controller {
         [HttpGet]
         public ActionResult Index(string provider) {
-            return Json(GetJsonObject(provider), JsonRequestBehavior.AllowGet);
-        }
-
-        private object GetJsonObject(string provider) {
-            LoginWithProvider(provider);
-            return new object();
-        }
-
-        public void LoginWithProvider(string provider) {
             OAuthWebSecurity.RequestAuthentication(provider, Url.Action("AuthenticationCallback"));
+            return null;
         }
 
         [HttpGet]
