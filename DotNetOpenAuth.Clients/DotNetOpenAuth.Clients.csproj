@@ -131,7 +131,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Default.cs" />
     <Compile Include="FacebookOAuthClient.cs" />
     <Compile Include="FlickrOAuthClient.cs" />
     <Compile Include="GooglePlusOAuthClient.cs" />
@@ -140,6 +139,7 @@
     <Compile Include="OAuthHelpers.cs" />
     <Compile Include="PinterestOAuthClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SignatureGenerator.cs" />
     <Compile Include="TumblrOAuthClient.cs" />
     <Compile Include="TwitterOAuthClient.cs" />
     <Compile Include="VkOAuthClient.cs" />

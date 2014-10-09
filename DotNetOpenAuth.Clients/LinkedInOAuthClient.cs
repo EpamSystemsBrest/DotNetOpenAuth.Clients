@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.IO;
-using System.Net;
-using System.Text;
 using System.Web;
 using DotNetOpenAuth.AspNet;
 
@@ -25,66 +22,70 @@ namespace DotNetOpenAuth.Clients {
         public string ProviderName { get { return "LinkedIn"; } }
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
-            var uri = OAuthHelpers.BuildUri(OAuthUrl, "uas/oauth2/authorization", new NameValueCollection()
-            {
-                                { "response_type", "code"},
-                                { "client_id",     _appKey },
-                                { "state",         Guid.NewGuid().ToString("N")   },
-                                { "redirect_uri" , HttpUtility.UrlEncode(returnUrl.AbsoluteUri) }
-            });
-
-            try {
-                context.Response.Redirect(uri);
-            } catch { //Tests context //TODO: @demns
-                context.Response.RedirectLocation = uri;
-            }
+            var uri = CreateRedirectionUri(returnUrl);
+            context.Response.Redirect(uri);
         }
 
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
             var accessToken = GetAccessToken(context);
             var userData = GetUserData(accessToken);
 
-            try {
-                return new AuthenticationResult(
-                    isSuccessful: true,
-                    provider: ProviderName,
-                    providerUserId: userData.headline,
-                    userName: userData.firstName + userData.lastName,
-                    extraData:
-                        new Dictionary<string, string>());
-            } catch (WebException ex) {
-                var responseStream = (MemoryStream)ex.Response.GetResponseStream();
-                throw new Exception(Encoding.UTF8.GetString(responseStream.ToArray()));
-            } catch (Exception ex) {
-                return new AuthenticationResult(ex);
-            }
+            return CreateAuthenticationResult(userData);
         }
 
         #endregion
 
+        private string CreateRedirectionUri(Uri returnUrl) {
+            var param = new NameValueCollection {
+                {"response_type", "code"},
+                {"client_id", _appKey},
+                {"state", Guid.NewGuid().ToString("N")},
+                {"redirect_uri", HttpUtility.UrlEncode(returnUrl.AbsoluteUri)}
+            };
+
+            return OAuthHelpers.BuildUri(OAuthUrl, "uas/oauth2/authorization", param);
+        }
+
         private AccessToken GetAccessToken(HttpContextBase context) {
             var redirectUri =
                 HttpUtility.UrlEncode(OAuthHelpers.RemoveUriParameter(context.Request.Url, "state", "code"));
-            var address = OAuthHelpers.BuildUri(OAuthUrl, "uas/oauth2/accessToken", new NameValueCollection()
-            {
-                {"grant_type",    "authorization_code"},
-                {"code",          context.Request["code"]},
-                {"redirect_uri",  redirectUri},
-                {"client_id",     _appKey},
-                {"client_secret", _appSecret}
-            });
+            var address = CreateAccessTokenUri(context, redirectUri);
 
-            return OAuthHelpers.DeserializeJson<AccessToken>(OAuthHelpers.Load(address));
+            return OAuthHelpers.DeserializeJsonWithLoad<AccessToken>(address);
+        }
+
+        private string CreateAccessTokenUri(HttpContextBase context, string redirectUri) {
+            return OAuthHelpers.BuildUri(OAuthUrl, "uas/oauth2/accessToken", new NameValueCollection
+            {
+                { "grant_type",    "authorization_code" },
+                { "code",          context.Request["code"] },
+                { "redirect_uri",  redirectUri },
+                { "client_id",     _appKey},
+                { "client_secret", _appSecret }
+            });
         }
 
         private static UserData GetUserData(AccessToken accessToken) {
-            var address = OAuthHelpers.BuildUri(ApiUrl, "v1/people/~", new NameValueCollection()
+            var address = CreateUserDataUri(accessToken);
+            return OAuthHelpers.DeserializeJsonWithLoad<UserData>(address);
+        }
+
+        private static string CreateUserDataUri(AccessToken accessToken) {
+            var address = OAuthHelpers.BuildUri(ApiUrl, "v1/people/~", new NameValueCollection
             {
                 {"oauth2_access_token", accessToken.access_token},
-                {"format",              "json"}
+                {"format", "json"}
             });
+            return address;
+        }
 
-            return OAuthHelpers.DeserializeJson<UserData>(OAuthHelpers.Load(address));
+        private AuthenticationResult CreateAuthenticationResult(UserData userData) {
+            return new AuthenticationResult(
+                isSuccessful: true,
+                provider: ProviderName,
+                providerUserId: userData.headline,
+                userName: userData.firstName + " " + userData.lastName,
+                extraData: new Dictionary<string, string>());
         }
 
         private class AccessToken {
