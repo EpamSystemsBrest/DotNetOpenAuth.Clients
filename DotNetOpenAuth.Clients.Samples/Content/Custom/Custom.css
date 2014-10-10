@@ -13,11 +13,6 @@ div {
     width: 600px;
 }
 
-a:link, a:visited {
-    color: #38488f;
-    text-decoration: none;
-}
-
 @media (max-width: 700px) {
     body {
         background-color: #fff;
@@ -29,4 +24,8 @@ a:link, a:visited {
         padding: 1em;
         width: auto;
     }
+}
+
+.white {
+    color: white;
 }

@@ -7,16 +7,16 @@
 </head>
 <body>
     <div class="text-center">
-        <h2>Sing in with </h2>
-        <a class="btn btn-social-icon btn-twitter" onclick="login('Twitter')"><i class="fa fa-twitter"></i></a>
-        <a class="btn btn-social-icon btn-google-plus" onclick="login('GooglePlus')"><i class="fa fa-google-plus"></i></a>
-        <a class="btn btn-social-icon btn-flickr" onclick="login('Flickr')"><i class="fa fa-flickr"></i></a>
-        <a class="btn btn-social-icon btn-pinterest" onclick="login('Pinterest')"><i class="fa fa-pinterest"></i></a>
-        <a class="btn btn-social-icon btn-tumblr" onclick="login('Tumblr')"><i class="fa fa-tumblr"></i></a>
-        <a class="btn btn-social-icon btn-vk" onclick="login('Vk')"><i class="fa fa-vk"></i></a>
-        <a class="btn btn-social-icon btn-facebook" onclick="login('Facebook')"><i class="fa fa-facebook"></i></a>
-        <a class="btn btn-social-icon btn-instagram" onclick="login('Instagram')"><i class="fa fa-instagram"></i></a>
-        <a class="btn btn-social-icon btn-linkedin" onclick="login('LinkedIn')"><i class="fa fa-linkedin"></i></a>
+        <h2>Sing in with </h2> @*Dirty: ctrl+c ctrl+v*@
+        <a href="@Url.Action("Index", "Login", new { provider = "twitter" })" class="btn btn-social-icon btn-twitter white"><i class="fa fa-twitter"></i></a>
+        <a href="@Url.Action("Index", "Login", new { provider = "googleplus" })" class="btn btn-social-icon btn-google-plus white"><i class="fa fa-google-plus"></i></a>
+        <a href="@Url.Action("Index", "Login", new { provider = "flickr" })" class="btn btn-social-icon btn-flickr white"><i class="fa fa-flickr"></i></a>
+        <a href="@Url.Action("Index", "Login", new { provider = "pinterest" })" class="btn btn-social-icon btn-pinterest white"><i class="fa fa-pinterest"></i></a>
+        <a href="@Url.Action("Index", "Login", new { provider = "tumblr" })" class="btn btn-social-icon btn-tumblr white"><i class="fa fa-tumblr"></i></a>
+        <a href="@Url.Action("Index", "Login", new { provider = "vk" })" class="btn btn-social-icon btn-vk white"><i class="fa fa-vk"></i></a>
+        <a href="@Url.Action("Index", "Login", new { provider = "facebook" })" class="btn btn-social-icon btn-facebook white"><i class="fa fa-facebook"></i></a>
+        <a href="@Url.Action("Index", "Login", new { provider = "instagram" })" class="btn btn-social-icon btn-instagram white"><i class="fa fa-instagram"></i></a>
+        <a href="@Url.Action("Index", "Login", new { provider = "linkedin" })" class="btn btn-social-icon btn-linkedin white"><i class="fa fa-linkedin"></i></a>
         @RenderBody()
     </div>
 
@@ -27,6 +27,5 @@
 
     <script src="~/Scripts/jquery-2.1.1.min.js"></script>
     <script src="~/Scripts/bootstrap.min.js"></script>
-    <script src="~/Scripts/Custom/providers.js"></script>
 </body>
 </html>

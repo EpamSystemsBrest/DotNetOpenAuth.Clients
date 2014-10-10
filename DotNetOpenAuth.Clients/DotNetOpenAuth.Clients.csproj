@@ -131,6 +131,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AuthClient.cs" />
     <Compile Include="FacebookOAuthClient.cs" />
     <Compile Include="FlickrOAuthClient.cs" />
     <Compile Include="GooglePlusOAuthClient.cs" />

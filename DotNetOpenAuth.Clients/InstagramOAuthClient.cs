@@ -4,15 +4,18 @@ using System.Collections.Specialized;
 using System.Web;
 using DotNetOpenAuth.AspNet;
 
-namespace DotNetOpenAuth.Clients {
-    public class InstagramOAuthClient : IAuthenticationClient {
+namespace DotNetOpenAuth.Clients
+{
+    public class InstagramOAuthClient : IAuthenticationClient
+    {
         private const string OAuthUrl = "https://api.instagram.com/";
 
         private readonly string _clientId;
         private readonly string _clientSecret;
         private string _redirectUri;
 
-        public InstagramOAuthClient(string clientId, string clientSecret) {
+        public InstagramOAuthClient(string clientId, string clientSecret)
+        {
             _clientId = clientId;
             _clientSecret = clientSecret;
         }
@@ -21,29 +24,23 @@ namespace DotNetOpenAuth.Clients {
 
         public string ProviderName { get { return "Instagram"; } }
 
-        public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
+        public void RequestAuthentication(HttpContextBase context, Uri returnUrl)
+        {
+            var redirectUri = AuthClient.CreateRedirectionUri(OAuthUrl, "/oauth/authorize/", _clientId, returnUrl);
             _redirectUri = returnUrl.AbsoluteUri;
-            var uri = CreateRedirectUri();
-            context.Response.Redirect(uri);
+            context.Response.Redirect(redirectUri);
         }
 
-        public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
+        public AuthenticationResult VerifyAuthentication(HttpContextBase context)
+        {
             var accessInfo = GetAccessInfo(context);
             return CreateAuthenticationResult(accessInfo);
         }
 
         #endregion
 
-        private string CreateRedirectUri() {
-            return OAuthHelpers.BuildUri(OAuthUrl, "/oauth/authorize/", new NameValueCollection
-            {
-                {"client_id", _clientId},
-                {"redirect_uri", HttpUtility.UrlEncode(_redirectUri)},
-                {"response_type", "code"}
-            });
-        }
-
-        private AccessInfo GetAccessInfo(HttpContextBase context) {
+        private AccessInfo GetAccessInfo(HttpContextBase context)
+        {
             var param = new NameValueCollection
             {
                 {"client_id", _clientId},
@@ -56,7 +53,8 @@ namespace DotNetOpenAuth.Clients {
                 OAuthHelpers.PostRequest(OAuthUrl, "/oauth/access_token/", param));
         }
 
-        private AuthenticationResult CreateAuthenticationResult(AccessInfo accessInfo) {
+        private AuthenticationResult CreateAuthenticationResult(AccessInfo accessInfo)
+        {
             return new AuthenticationResult(
                 isSuccessful: true,
                 provider: ProviderName,
@@ -65,12 +63,14 @@ namespace DotNetOpenAuth.Clients {
                 extraData: new Dictionary<string, string>());
         }
 
-        private class AccessInfo {
+        private class AccessInfo
+        {
             public string access_token { get; set; }
             public User user { get; set; }
         }
 
-        private class User {
+        private class User
+        {
             public string id { get; set; }
             public string username { get; set; }
             public string full_name { get; set; }
