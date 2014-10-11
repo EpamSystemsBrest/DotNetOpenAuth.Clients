@@ -60,5 +60,10 @@ namespace DotNetOpenAuth.Clients {
         public static T DeserializeJsonWithLoad<T>(string url) {
             return DeserializeJson<T>(Load(url));
         }
+
+        public static string GetValueFromRequest(string request, string value)
+        {
+            return HttpUtility.ParseQueryString(request).Get(value);
+        }
     }
 }

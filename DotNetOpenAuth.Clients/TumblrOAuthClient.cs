@@ -1,32 +1,30 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Web;
 using DotNetOpenAuth.AspNet;
-using System.Net;
-using System.Collections.Generic;
-using System.Text;
-using System.Security.Cryptography;
-using System.Globalization;
-using System.Text.RegularExpressions;
 
-namespace DotNetOpenAuth.Clients {
-    public class TumblrOAuthClient : IAuthenticationClient {
-        private const string RequestTokenUrl = "http://www.tumblr.com/oauth/request_token";
-        private const string AccessTokenUrl = "http://www.tumblr.com/oauth/access_token";
-        private const string AuthorizeUrl = "http://www.tumblr.com/oauth/authorize";
+namespace DotNetOpenAuth.Clients
+{
+    public class TumblrOAuthClient : IAuthenticationClient
+    {
+        private const string TumblrUrl = "https://www.tumblr.com/";
+        private const string TumblrApi = "https://api.tumblr.com/";
+
         private const string SignatureMethod = "HMAC-SHA1";
-        private const string OAuthVersion = "1.0";
 
         private readonly string _appId;
         private readonly string _appSecret;
-        private string _tokenSecret;
-        private string _token;
-        private readonly Random _rand = new Random();
 
+        private string _tokenSecret;
+
+        private static SignatureGenerator _signatureGenerator;
 
         public TumblrOAuthClient(string appId, string appSecret)
         {
             _appId = appId;
             _appSecret = appSecret;
+            _signatureGenerator = new SignatureGenerator(_appSecret, _tokenSecret);
         }
 
         #region IAuthenticationClient
@@ -35,121 +33,116 @@ namespace DotNetOpenAuth.Clients {
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl)
         {
-            var url = CreateRequestTokenUrl(returnUrl);
-            var request = GetRequestStringFromUrl(url);
-            _token = GetValueFromRequest(request, "oauth_token");
-            _tokenSecret = GetValueFromRequest(request, "oauth_token_secret");
+            var requestTokenUrl = CreateRequestTokenUrl(returnUrl);
+            var response = OAuthHelpers.Load(requestTokenUrl);
+            RegenerateSignatureKey(response);
 
-            HttpContext.Current.Response.Redirect(AuthorizeUrl + "?oauth_token=" + _token, false);
+            var url = OAuthHelpers.BuildUri(TumblrUrl, "oauth/authorize", new NameValueCollection
+            {
+                {"oauth_token", OAuthHelpers.GetValueFromRequest(response, "oauth_token" ) }
+            });
+
+            context.Response.Redirect(url, false);
         }
 
-        public AuthenticationResult VerifyAuthentication(HttpContextBase context) 
+        public AuthenticationResult VerifyAuthentication(HttpContextBase context)
         {
-            //var request = GetRequestStringFromUrl(CreateAuthorizeUrl());
-            //var userData = UserData.CreateUserInfo(request);
-            return CreateAuthenticationResult();
+            var url = CreateAccessTokenUrl(context);
+            var response = OAuthHelpers.Load(url);
+            RegenerateSignatureKey(response);
+            var userData = GetUserData(OAuthHelpers.GetValueFromRequest(response, "oauth_token"));
+         
+            return CreateAuthenticationResult(userData);
         }
 
         #endregion IAuthenticationClient
 
         private string CreateRequestTokenUrl(Uri returnUrl)
         {
-            var parameters = "oauth_callback=" + Encode(returnUrl.AbsoluteUri) +
-                             "&oauth_consumer_key=" + _appId +
-                             "&oauth_nonce=" + GenerateNonce() +
-                             "&oauth_signature_method=" + SignatureMethod +
-                             "&oauth_timestamp=" + GetTimestamp() +
-                             "&oauth_version=" + OAuthVersion;
+            var parameters = new NameValueCollection
+            {
+                {"oauth_callback", SignatureGenerator.Encode(returnUrl.AbsoluteUri)},
+                {"oauth_consumer_key", _appId},
+                {"oauth_nonce", SignatureGenerator.GenerateNonce()},
+                {"oauth_signature_method", SignatureMethod},
+                {"oauth_timestamp", SignatureGenerator.GetTimestamp()},
+                {"oauth_version", "1.0"},
+            };
+            var parametersString = OAuthHelpers.ConstructQueryString(parameters);
 
-            var signature = GenerateSignature("GET", RequestTokenUrl, parameters, true);
+            var signature = _signatureGenerator.GenerateSignature("GET", TumblrUrl + "oauth/request_token", parametersString, true);
+            parameters.Set("oauth_signature", signature);
 
-            return RequestTokenUrl + "?" + parameters + "&oauth_signature=" + signature;
+            return OAuthHelpers.BuildUri(TumblrUrl, "oauth/request_token", parameters);
+        }
+
+        private void RegenerateSignatureKey(string response)
+        {
+            _tokenSecret = HttpUtility.ParseQueryString(response).Get("oauth_token_secret");
+            _signatureGenerator = new SignatureGenerator(_appSecret, _tokenSecret);
         }
 
         private string CreateAccessTokenUrl(HttpContextBase context)
         {
-            var oauthVerifier = context.Request.QueryString["oauth_verifier"];
-            var oauthToken = context.Request.QueryString["oauth_token"];
+            var parameters = new NameValueCollection
+            {
+                {"oauth_consumer_key", _appId},
+                {"oauth_nonce", SignatureGenerator.GenerateNonce()},
+                {"oauth_signature_method", "HMAC-SHA1"},
+                {"oauth_timestamp", SignatureGenerator.GetTimestamp()},
+                {"oauth_token", context.Request["oauth_token"]},
+                {"oauth_verifier", context.Request["oauth_verifier"]},
+                {"oauth_version", "1.0"},
+            };
+            var parametersString = OAuthHelpers.ConstructQueryString(parameters);
 
-            var parameters = "oauth_consumer_key=" + _appId +
-                             "&oauth_nonce=" + GenerateNonce() +
-                             "&oauth_signature_method=" + SignatureMethod +
-                             "&oauth_timestamp=" + GetTimestamp() +
-                             "&oauth_token=" + oauthToken +
-                             "&oauth_verifier=" + oauthVerifier +
-                             "&oauth_version=" + OAuthVersion;
+            var signature = _signatureGenerator.GenerateSignature("GET", TumblrUrl + "oauth/access_token", parametersString);
+            parameters.Set("oauth_signature", signature);
 
-            var signature = GenerateSignature("GET", AccessTokenUrl, parameters);
-            return AccessTokenUrl + "?" + parameters + "&oauth_signature=" + signature;
+            return OAuthHelpers.BuildUri(TumblrUrl, "oauth/access_token", parameters);
         }
 
-        //
-        //
-        //    var parameters = "oauth_consumer_key=" + _appId +
-        //                    "&oauth_consumer_secret =" + _appSecret +
-        //                    "&oauth_token=" + _token +
-        //                    "&oauth_token_secret =" + _tokenSecret;
-
-        //   
-        //
-
-        private static string GetRequestStringFromUrl(string url) 
+        private UserData GetUserData(string token)
         {
-            return new WebClient().DownloadString(url);
+            var url = CreateUserInfoUrl(token);
+
+            // 401: Not Autorized 
+            var response = OAuthHelpers.Load(url);
+
+            return OAuthHelpers.DeserializeJson<UserData>(response);
         }
 
-        private static string GetValueFromRequest(string request, string value) 
+        private string CreateUserInfoUrl(string token)
         {
-            return HttpUtility.ParseQueryString(request).Get(value);
+            var parameters = new NameValueCollection
+            {
+                {"oauth_consumer_key", _appId},
+                {"oauth_token", token},
+                {"oauth_nonce", SignatureGenerator.GenerateNonce()},
+                {"oauth_signature_method", SignatureMethod},
+                {"oauth_timestamp", SignatureGenerator.GetTimestamp()},
+                {"oauth_version", "1.0"},
+            };
+            var parametersString = OAuthHelpers.ConstructQueryString(parameters);
+
+            var signature = _signatureGenerator.GenerateSignature("GET", TumblrApi + "v2/user/info", parametersString, true);
+            parameters.Set("oauth_signature", signature);
+
+            return OAuthHelpers.BuildUri(TumblrApi, "v2/user/info", parameters);
         }
 
-        private AuthenticationResult CreateAuthenticationResult() 
+        private AuthenticationResult CreateAuthenticationResult(UserData userData)
         {
             return new AuthenticationResult(
                 isSuccessful: true,
                 provider: ProviderName,
-                providerUserId: "0",
-                userName: "MyName",
-                extraData: null);
-        }     
-
-        private string GenerateSignature(string httpMethod, string apiEndpoint, string parameters, bool getToken = false) 
-        {
-            var basestring = httpMethod + "&" + Encode(apiEndpoint) + "&" + Encode(parameters);
-
-            var encoding = new ASCIIEncoding();
-
-            var key = getToken ? _appSecret + "&" : _appSecret + "&" + _tokenSecret;
-            var keyByte = encoding.GetBytes(key);
-
-            var messageBytes = encoding.GetBytes(basestring);
-            string signature;
-            using (var hmacsha1 = new HMACSHA1(keyByte)) {
-                byte[] hashmessage = hmacsha1.ComputeHash(messageBytes);
-                signature = Convert.ToBase64String(hashmessage);
-            }
-            return Encode(signature);
+                providerUserId: "",
+                userName: "this stuff not work",
+                extraData: null
+                );
         }
 
-        private static string GetTimestamp() {
-            return ((int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds)
-                        .ToString(CultureInfo.InvariantCulture);
-        }
-
-        private string GenerateNonce() {
-            return _rand.Next(999999).ToString(CultureInfo.InvariantCulture);
-        }
-
-        private class UserData {
-        }
-
-        private static string Encode(string str) {
-            var charClass = String.Format("0-9a-zA-Z{0}", Regex.Escape("-_.!~*'()"));
-            return Regex.Replace(str, String.Format("[^{0}]", charClass), EncodeEvaluator);
-        }
-
-        private static string EncodeEvaluator(Match match) {
-            return (match.Value == " ") ? "+" : String.Format("%{0:X2}", Convert.ToInt32(match.Value[0]));
-        }
+        private class UserData { }
     }
 }
+

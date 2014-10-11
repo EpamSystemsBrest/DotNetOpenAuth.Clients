@@ -28,9 +28,9 @@ namespace DotNetOpenAuth.Clients {
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
             var url = CreateRequestTokenUrl(returnUrl);
-            var request = GetRequestStringFromUrl(url);
-            var requestToken = GetValueFromRequest(request, "oauth_token");
-            _tokenSecret = GetValueFromRequest(request, "oauth_token_secret");
+            var request = OAuthHelpers.Load(url);
+            var requestToken = OAuthHelpers.GetValueFromRequest(request, "oauth_token");
+            _tokenSecret = OAuthHelpers.GetValueFromRequest(request, "oauth_token_secret");
             _signatureGenerator = new SignatureGenerator(_appSecret, _tokenSecret);
 
             HttpContext.Current.Response.Redirect(AuthorizeUrl + "?oauth_token=" + requestToken, false);
@@ -39,7 +39,7 @@ namespace DotNetOpenAuth.Clients {
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
 
             var url = CreateUserInfoUrl(context);
-            var request = GetRequestStringFromUrl(url);
+            var request = OAuthHelpers.Load(url);
             var userData = UserData.CreateUserInfo(request);
             return CreateAuthenticationResult(userData);
         }
@@ -83,14 +83,6 @@ namespace DotNetOpenAuth.Clients {
                 providerUserId: userData.UserId,
                 userName: userData.ScreenName,
                 extraData: new Dictionary<string, string>());
-        }
-
-        private static string GetValueFromRequest(string request, string value) {
-            return HttpUtility.ParseQueryString(request).Get(value);
-        }
-
-        private static string GetRequestStringFromUrl(string url) {
-            return new WebClient().DownloadString(url);
         }
 
         private string CreateRequestTokenUrl(Uri returnUrl) {
