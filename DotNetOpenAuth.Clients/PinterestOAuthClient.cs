@@ -4,6 +4,8 @@ using DotNetOpenAuth.AspNet;
 
 namespace DotNetOpenAuth.Clients {
     public class PinterestOAuthClient : IAuthenticationClient {
+        public PinterestOAuthClient(string appId, string appSecret) {
+        }
 
         #region IAuthenticationClient
 

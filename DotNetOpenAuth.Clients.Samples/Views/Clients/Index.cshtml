@@ -1,0 +1,9 @@
+﻿@model IEnumerable<string>
+
+@foreach (var s in Model) {
+    var provider = s;
+    if (s == "googleplus") { provider = "google-plus"; }
+    var btnS = "btn-" + provider;
+    var faS = "fa-" + provider;
+    <a href="@Url.Action("Index", "Login", new { @provider })" class="btn btn-social-icon @btnS"><i class="fa @faS"></i></a>
+}

@@ -15,7 +15,7 @@ namespace DotNetOpenAuth.Clients {
         public static void RewriteRequest() { //TODO : help required
             var context = HttpContext.Current;
             var stateString = HttpUtility.UrlDecode(context.Request.QueryString["state"]);
-            if (stateString == null || !stateString.Contains("__provider__=GooglePlus"))
+            if (stateString == null || !stateString.Contains("__provider__=Google-Plus"))
                 return;
 
             var query = HttpUtility.ParseQueryString(stateString);
@@ -30,7 +30,7 @@ namespace DotNetOpenAuth.Clients {
 
         #region IAuthenticationClient
 
-        public string ProviderName { get { return "GooglePlus"; } }
+        public string ProviderName { get { return "Google-Plus"; } }
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
             var redirectUri = CreateRedirectUri(returnUrl);

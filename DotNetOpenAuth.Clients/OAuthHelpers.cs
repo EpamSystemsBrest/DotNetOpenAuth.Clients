@@ -37,11 +37,17 @@ namespace DotNetOpenAuth.Clients {
         }
 
         public static string Load(string address) { //TODO: check for webclient (currently doesn't work with russian culture)
-            var request = WebRequest.Create(address);
-            using (var response = request.GetResponse()) {
-                using (var reader = new StreamReader(response.GetResponseStream())) {
-                    return reader.ReadToEnd();
+            try {
+                var request = WebRequest.Create(address);
+                using (var response = request.GetResponse()) {
+                    using (var reader = new StreamReader(response.GetResponseStream())) {
+                        return reader.ReadToEnd();
+                    }
                 }
+            }
+            catch (WebException ex) {
+                var responseStream = (MemoryStream)ex.Response.GetResponseStream();
+                throw new Exception(Encoding.UTF8.GetString(responseStream.ToArray()));
             }
         }
 
@@ -61,8 +67,7 @@ namespace DotNetOpenAuth.Clients {
             return DeserializeJson<T>(Load(url));
         }
 
-        public static string GetValueFromRequest(string request, string value)
-        {
+        public static string GetValueFromRequest(string request, string value) {
             return HttpUtility.ParseQueryString(request).Get(value);
         }
     }

@@ -7,7 +7,7 @@ namespace DotNetOpenAuth.Clients.Samples.Controllers {
         [HttpGet]
         public ActionResult Index(string provider) {
             OAuthWebSecurity.RequestAuthentication(provider, Url.Action("AuthenticationCallback"));
-            return null;
+            return Content(string.Empty);
         }
 
         [HttpGet]
