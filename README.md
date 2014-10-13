@@ -16,7 +16,7 @@ Top 9 Most Popular Social Networking Sites:
 
 5 | Google Plus+ +
 
-6 | Tumblr 
+6 | Tumblr +
 
 7 | Instagram +
 
