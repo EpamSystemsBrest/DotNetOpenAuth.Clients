@@ -4,15 +4,19 @@ using System.Linq;
 using System.Web.Mvc;
 using DotNetOpenAuth.AspNet;
 
-namespace DotNetOpenAuth.Clients.Samples.Controllers {
-    public class ClientsController : Controller {
+namespace DotNetOpenAuth.Clients.Samples.Controllers
+{
+    public class ClientsController : Controller
+    {
         // GET: Clients
-        public PartialViewResult Index() {
+        public PartialViewResult Index()
+        {
             var z = FindDerivedTypesFrom("DotNetOpenAuth.Clients");
             return PartialView(z);
         }
 
-        public IEnumerable<string> FindDerivedTypesFrom(string assemblyName) { //TODO: check and replace
+        public IEnumerable<string> FindDerivedTypesFrom(string assemblyName)
+        { //TODO: check and replace
             return AppDomain.CurrentDomain.GetAssemblies().
                              SingleOrDefault(a => a.GetName().Name == assemblyName).GetTypes().
                              Where(t => t.GetInterfaces().Contains(typeof(IAuthenticationClient))).

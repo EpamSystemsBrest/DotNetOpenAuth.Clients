@@ -1,6 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Text;
 using System.Web;
 using DotNetOpenAuth.AspNet;
 
@@ -51,7 +54,7 @@ namespace DotNetOpenAuth.Clients
             var response = OAuthHelpers.Load(url);
             RegenerateSignatureKey(response);
             var userData = GetUserData(OAuthHelpers.GetValueFromRequest(response, "oauth_token"));
-         
+
             return CreateAuthenticationResult(userData);
         }
 
@@ -104,31 +107,57 @@ namespace DotNetOpenAuth.Clients
 
         private UserData GetUserData(string token)
         {
-            var url = CreateUserInfoUrl(token);
-
-            // 401: Not Autorized 
-            var response = OAuthHelpers.Load(url);
-
-            return OAuthHelpers.DeserializeJson<UserData>(response);
-        }
-
-        private string CreateUserInfoUrl(string token)
-        {
             var parameters = new NameValueCollection
             {
                 {"oauth_consumer_key", _appId},
-                {"oauth_token", token},
                 {"oauth_nonce", SignatureGenerator.GenerateNonce()},
                 {"oauth_signature_method", SignatureMethod},
                 {"oauth_timestamp", SignatureGenerator.GetTimestamp()},
+                {"oauth_token", token},
                 {"oauth_version", "1.0"},
             };
             var parametersString = OAuthHelpers.ConstructQueryString(parameters);
 
-            var signature = _signatureGenerator.GenerateSignature("GET", TumblrApi + "v2/user/info", parametersString, true);
+            var signature = _signatureGenerator.GenerateSignature("GET", TumblrApi + "v2/user/info", parametersString);
+
             parameters.Set("oauth_signature", signature);
 
-            return OAuthHelpers.BuildUri(TumblrApi, "v2/user/info", parameters);
+            var auth = "OAuth" + ConstructQueryStringForComma(parameters);
+
+            var response = LoadWithAuthHeader(OAuthHelpers.BuildUri(TumblrApi, "v2/user/info", parameters), auth);
+
+            return OAuthHelpers.DeserializeJson<UserData>(response);
+        }
+
+        public static String ConstructQueryStringForComma(NameValueCollection parameters)
+        {
+            return String.Join(",",
+                parameters.Cast<string>().Select(parameter => parameter + "=" + parameters[parameter])
+                );
+        }
+
+        public static string LoadWithAuthHeader(string address, string auth)
+        {
+            try
+            {
+                var request = WebRequest.Create(address);
+                request.Method = "GET";
+
+                request.Headers.Add("Authorization", auth);
+
+                using (var response = request.GetResponse())
+                {
+                    using (var reader = new StreamReader(response.GetResponseStream()))
+                    {
+                        return reader.ReadToEnd();
+                    }
+                }
+            }
+            catch (WebException ex)
+            {
+                var responseStream = (MemoryStream)ex.Response.GetResponseStream();
+                throw new Exception(Encoding.UTF8.GetString(responseStream.ToArray()));
+            }
         }
 
         private AuthenticationResult CreateAuthenticationResult(UserData userData)
@@ -136,13 +165,68 @@ namespace DotNetOpenAuth.Clients
             return new AuthenticationResult(
                 isSuccessful: true,
                 provider: ProviderName,
-                providerUserId: "",
-                userName: "this stuff not work",
+                providerUserId: userData.response.user.blogs[0].url,
+                userName: userData.response.user.name,
                 extraData: null
                 );
         }
 
-        private class UserData { }
+        public class UserData
+        {
+            public Meta meta { get; set; }
+            public Response response { get; set; }
+        }
+
+        public class Meta
+        {
+            public int status { get; set; }
+            public string msg { get; set; }
+        }
+
+        public class Response
+        {
+            public User user { get; set; }
+        }
+
+        public class User
+        {
+            public string name { get; set; }
+            public int likes { get; set; }
+            public int following { get; set; }
+            public string default_post_format { get; set; }
+            public Blog[] blogs { get; set; }
+        }
+
+        public class Blog
+        {
+            public string title { get; set; }
+            public string name { get; set; }
+            public int posts { get; set; }
+            public string url { get; set; }
+            public int updated { get; set; }
+            public string description { get; set; }
+            public bool is_nsfw { get; set; }
+            public bool ask { get; set; }
+            public string ask_page_title { get; set; }
+            public bool ask_anon { get; set; }
+            public bool followed { get; set; }
+            public bool can_send_fan_mail { get; set; }
+            public bool share_likes { get; set; }
+            public int likes { get; set; }
+            public bool twitter_enabled { get; set; }
+            public bool twitter_send { get; set; }
+            public string facebook_opengraph_enabled { get; set; }
+            public string tweet { get; set; }
+            public string facebook { get; set; }
+            public int followers { get; set; }
+            public bool primary { get; set; }
+            public bool admin { get; set; }
+            public int messages { get; set; }
+            public int queue { get; set; }
+            public int drafts { get; set; }
+            public string type { get; set; }
+        }
+
     }
 }
 
