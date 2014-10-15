@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
 using System.Web;
 using DotNetOpenAuth.AspNet;
 
@@ -35,7 +34,7 @@ namespace DotNetOpenAuth.Clients {
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
             var accessToken = GetAccessToken(context);
             var userData = GetUserData(accessToken);
-            return CreateAuthenticationResult(accessToken, userData);
+            return CreateAuthenticationResult(userData);
         }
 
         #endregion IAuthenticationClient
@@ -51,9 +50,10 @@ namespace DotNetOpenAuth.Clients {
             return OAuthHelpers.BuildUri(OAuthUrl, "authorize", param);
         }
 
-        private AccessToken GetAccessToken(HttpContextBase context) {
+        private string GetAccessToken(HttpContextBase context) {
             var address = CreateBuildUri(context);
-            return OAuthHelpers.DeserializeJsonWithLoad<AccessToken>(address);
+            var response = OAuthHelpers.GetObjectFromAddress(address);
+            return response.user_id;
         }
 
         private string CreateBuildUri(HttpContextBase context) {
@@ -67,46 +67,33 @@ namespace DotNetOpenAuth.Clients {
             return OAuthHelpers.BuildUri(OAuthUrl, "access_token", param);
         }
 
-        private static UserData GetUserData(AccessToken accessToken) {
-            var address = CreateUsersGetUri(accessToken);
-            return OAuthHelpers.DeserializeJsonWithLoad<UsersData>(address).response.First();
+        private static UserInfo GetUserData(string userId) {
+            var address = CreateUsersGetUri(userId);
+            var response = OAuthHelpers.GetObjectFromAddress(address);
+            var user = response.response[0];
+            return new UserInfo {
+                Id = user.uid,
+                UserName = user.first_name + " " + user.last_name
+            };
         }
 
-        private static string CreateUsersGetUri(AccessToken accessToken) {
+        private static string CreateUsersGetUri(string userId) {
             var param = new NameValueCollection {
-                {"uids", accessToken.user_id}
+                {"uids", userId}
             };
 
             return OAuthHelpers.BuildUri(ApiUrl, "method/users.get", param);
         }
 
-        private AuthenticationResult CreateAuthenticationResult(AccessToken accessToken, UserData userData) {
+        private AuthenticationResult CreateAuthenticationResult(UserInfo userInfo) {
             return new AuthenticationResult(
                 isSuccessful: true,
                 provider: ProviderName,
-                providerUserId: accessToken.user_id,
-                userName: userData.first_name + " " + userData.last_name,
+                providerUserId: userInfo.Id,
+                userName: userInfo.UserName,
                 extraData:
-                    new Dictionary<string, string>
-                    {
-                        {"LastName", userData.last_name},
-                        {"FirstName", userData.first_name}
-                    });
-        }
-
-        private class AccessToken {
-            public string access_token = null;
-            public string user_id = null;
-        }
-
-        private class UserData {
-            public string uid = null;
-            public string first_name = null;
-            public string last_name = null;
-        }
-
-        private class UsersData {
-            public UserData[] response = null;
+                    new Dictionary<string, string>()
+                    );
         }
     }
 }

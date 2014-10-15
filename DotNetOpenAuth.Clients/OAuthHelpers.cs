@@ -6,6 +6,7 @@ using System.Net;
 using System.Text;
 using System.Web;
 using System.Web.Script.Serialization;
+using Newtonsoft.Json.Linq;
 
 namespace DotNetOpenAuth.Clients {
     public static class OAuthHelpers {
@@ -69,6 +70,10 @@ namespace DotNetOpenAuth.Clients {
 
         public static string GetValueFromRequest(string request, string value) {
             return HttpUtility.ParseQueryString(request).Get(value);
+        }
+
+        public static dynamic GetObjectFromAddress(string address) {
+            return JObject.Parse(Load(address));
         }
     }
 }
