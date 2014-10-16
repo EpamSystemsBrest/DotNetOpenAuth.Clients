@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Net;
 using System.Text;
 using System.Web;
 using System.Web.Script.Serialization;
+using DotNetOpenAuth.AspNet;
 using Newtonsoft.Json.Linq;
 
 namespace DotNetOpenAuth.Clients {
@@ -74,6 +76,17 @@ namespace DotNetOpenAuth.Clients {
 
         public static dynamic GetObjectFromAddress(string address) {
             return JObject.Parse(Load(address));
+        }
+
+        public static AuthenticationResult CreateAuthenticationResult(string providerName, UserInfo userInfo) {
+            return new AuthenticationResult(
+                isSuccessful: true,
+                provider: providerName,
+                providerUserId: userInfo.Id,
+                userName: userInfo.UserName,
+                extraData:
+                    new Dictionary<string, string>()
+                    );
         }
     }
 }

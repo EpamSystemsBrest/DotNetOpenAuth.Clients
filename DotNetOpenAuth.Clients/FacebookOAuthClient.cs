@@ -1,6 +1,5 @@
 ﻿using DotNetOpenAuth.AspNet;
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Web;
 
@@ -29,7 +28,7 @@ namespace DotNetOpenAuth.Clients {
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
             var accessToken = GetAccessToken(context.Request["code"], context.Request.Url);
             var userData = GetUserData(accessToken);
-            return CreateAuthenticationResult(userData);
+            return OAuthHelpers.CreateAuthenticationResult(ProviderName, userData);
         }
 
         #endregion
@@ -49,33 +48,22 @@ namespace DotNetOpenAuth.Clients {
             });
         }
 
-        private static UserData GetUserData(string accessToken) {
-            var uri = OAuthHelpers.BuildUri(ApiUrl, "me", new NameValueCollection
-                {
-                    { "access_token", accessToken } 
+        private static UserInfo GetUserData(string accessToken) {
+            var uri = CreateUserInfoUri(accessToken);
+            var response = OAuthHelpers.GetObjectFromAddress(uri);
+
+            return new UserInfo {
+                Id = response.id,
+                UserName = response.first_name + " " + response.last_name
+            };
+        }
+
+        private static string CreateUserInfoUri(string accessToken) {
+            return OAuthHelpers.BuildUri(ApiUrl, "me", new NameValueCollection
+            {
+                { "access_token", accessToken } 
                 
-                });
-            return OAuthHelpers.DeserializeJsonWithLoad<UserData>(uri);
-        }
-
-        private AuthenticationResult CreateAuthenticationResult(UserData userData) {
-            return new AuthenticationResult(
-                isSuccessful: true,
-                provider: ProviderName,
-                providerUserId: userData.id,
-                userName: userData.first_name + " " + userData.last_name,
-                extraData:
-                    new Dictionary<string, string>
-                    {
-                        {"LastName", userData.last_name},
-                        {"FirstName", userData.first_name}
-                    });
-        }
-
-        private class UserData {
-            public string id = null;
-            public string first_name = null;
-            public string last_name = null;
+            });
         }
     }
 }

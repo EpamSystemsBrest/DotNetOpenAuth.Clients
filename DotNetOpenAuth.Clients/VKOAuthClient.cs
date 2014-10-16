@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Web;
 using DotNetOpenAuth.AspNet;
@@ -34,7 +33,7 @@ namespace DotNetOpenAuth.Clients {
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
             var accessToken = GetAccessToken(context);
             var userData = GetUserData(accessToken);
-            return CreateAuthenticationResult(userData);
+            return OAuthHelpers.CreateAuthenticationResult(ProviderName, userData);
         }
 
         #endregion IAuthenticationClient
@@ -68,7 +67,7 @@ namespace DotNetOpenAuth.Clients {
         }
 
         private static UserInfo GetUserData(string userId) {
-            var address = CreateUsersGetUri(userId);
+            var address = CreateUserInfoUri(userId);
             var response = OAuthHelpers.GetObjectFromAddress(address);
             var user = response.response[0];
             return new UserInfo {
@@ -77,23 +76,12 @@ namespace DotNetOpenAuth.Clients {
             };
         }
 
-        private static string CreateUsersGetUri(string userId) {
+        private static string CreateUserInfoUri(string userId) {
             var param = new NameValueCollection {
                 {"uids", userId}
             };
 
             return OAuthHelpers.BuildUri(ApiUrl, "method/users.get", param);
-        }
-
-        private AuthenticationResult CreateAuthenticationResult(UserInfo userInfo) {
-            return new AuthenticationResult(
-                isSuccessful: true,
-                provider: ProviderName,
-                providerUserId: userInfo.Id,
-                userName: userInfo.UserName,
-                extraData:
-                    new Dictionary<string, string>()
-                    );
         }
     }
 }
