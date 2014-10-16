@@ -72,7 +72,7 @@ namespace DotNetOpenAuth.Clients {
             var user = response.response[0];
             return new UserInfo {
                 Id = user.uid,
-                UserName = user.first_name + " " + user.last_name
+                UserName = String.Format("{0} {1}", user.first_name, user.last_name)
             };
         }
 

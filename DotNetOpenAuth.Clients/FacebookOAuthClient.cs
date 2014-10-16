@@ -54,15 +54,13 @@ namespace DotNetOpenAuth.Clients {
 
             return new UserInfo {
                 Id = response.id,
-                UserName = response.first_name + " " + response.last_name
+                UserName = String.Format("{0} {1}", response.first_name, response.last_name)
             };
         }
 
         private static string CreateUserInfoUri(string accessToken) {
-            return OAuthHelpers.BuildUri(ApiUrl, "me", new NameValueCollection
-            {
+            return OAuthHelpers.BuildUri(ApiUrl, "me", new NameValueCollection {
                 { "access_token", accessToken } 
-                
             });
         }
     }
