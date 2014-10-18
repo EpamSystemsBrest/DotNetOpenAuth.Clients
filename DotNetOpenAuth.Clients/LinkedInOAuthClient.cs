@@ -1,21 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Web;
 using DotNetOpenAuth.AspNet;
 
-namespace DotNetOpenAuth.Clients
-{
-    public class LinkedInOAuthClient : IAuthenticationClient
-    {
+namespace DotNetOpenAuth.Clients {
+    public class LinkedInOAuthClient : IAuthenticationClient {
         private const string OAuthUrl = "https://www.linkedin.com/";
         private const string ApiUrl = "https://api.linkedin.com/";
 
         private readonly string _appKey;
         private readonly string _appSecret;
 
-        public LinkedInOAuthClient(string appKey, string secretKey)
-        {
+        public LinkedInOAuthClient(string appKey, string secretKey) {
             _appKey = appKey;
             _appSecret = secretKey;
         }
@@ -24,45 +20,40 @@ namespace DotNetOpenAuth.Clients
 
         public string ProviderName { get { return "LinkedIn"; } }
 
-        public void RequestAuthentication(HttpContextBase context, Uri returnUrl)
-        {
+        public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
             var uri = CreateRedirectionUri(returnUrl);
             context.Response.Redirect(uri);
         }
 
-        public AuthenticationResult VerifyAuthentication(HttpContextBase context)
-        {
+        public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
             var accessToken = GetAccessToken(context);
             var userData = GetUserData(accessToken);
 
-            return CreateAuthenticationResult(userData);
+            return OAuthHelpers.CreateAuthenticationResult(ProviderName, userData);
         }
 
         #endregion
 
-        private string CreateRedirectionUri(Uri returnUrl)
-        {
+        private string CreateRedirectionUri(Uri returnUrl) {
             var param = new NameValueCollection {
-                {"response_type", "code"},
-                {"client_id", _appKey},
-                {"state", Guid.NewGuid().ToString("N")},
-                {"redirect_uri", HttpUtility.UrlEncode(returnUrl.AbsoluteUri)}
+                { "response_type",  "code" },
+                { "client_id",      _appKey },
+                { "state",          Guid.NewGuid().ToString("N") },
+                { "redirect_uri",   HttpUtility.UrlEncode(returnUrl.AbsoluteUri) }
             };
 
             return OAuthHelpers.BuildUri(OAuthUrl, "uas/oauth2/authorization", param);
         }
 
-        private AccessToken GetAccessToken(HttpContextBase context)
-        {
+        private string GetAccessToken(HttpContextBase context) {
             var redirectUri =
                 HttpUtility.UrlEncode(OAuthHelpers.RemoveUriParameter(context.Request.Url, "state", "code"));
             var address = CreateAccessTokenUri(context, redirectUri);
 
-            return OAuthHelpers.DeserializeJsonWithLoad<AccessToken>(address);
+            return OAuthHelpers.GetObjectFromAddress(address).access_token;
         }
 
-        private string CreateAccessTokenUri(HttpContextBase context, string redirectUri)
-        {
+        private string CreateAccessTokenUri(HttpContextBase context, string redirectUri) {
             return OAuthHelpers.BuildUri(OAuthUrl, "uas/oauth2/accessToken", new NameValueCollection
             {
                 { "grant_type",    "authorization_code" },
@@ -73,43 +64,22 @@ namespace DotNetOpenAuth.Clients
             });
         }
 
-        private static UserData GetUserData(AccessToken accessToken)
-        {
+        private static UserInfo GetUserData(string accessToken) {
             var address = CreateUserDataUri(accessToken);
-            return OAuthHelpers.DeserializeJsonWithLoad<UserData>(address);
+            var response = OAuthHelpers.GetObjectFromAddress(address);
+            var url = new Uri(response.siteStandardProfileRequest.url.ToString());
+            var id = HttpUtility.ParseQueryString(url.Query).Get("id");
+            return new UserInfo {
+                Id = id,
+                UserName = String.Format("{0} {1}", response.firstName, response.lastName)
+            };
         }
 
-        private static string CreateUserDataUri(AccessToken accessToken)
-        {
-            var address = OAuthHelpers.BuildUri(ApiUrl, "v1/people/~", new NameValueCollection
-            {
-                {"oauth2_access_token", accessToken.access_token},
-                {"format", "json"}
+        private static string CreateUserDataUri(string accessToken) {
+            return OAuthHelpers.BuildUri(ApiUrl, "v1/people/~", new NameValueCollection {
+                { "oauth2_access_token", accessToken },
+                { "format",              "json" }
             });
-            return address;
-        }
-
-        private AuthenticationResult CreateAuthenticationResult(UserData userData)
-        {
-            return new AuthenticationResult(
-                isSuccessful: true,
-                provider: ProviderName,
-                providerUserId: userData.headline,
-                userName: userData.firstName + " " + userData.lastName,
-                extraData: new Dictionary<string, string>());
-        }
-
-        private class AccessToken
-        {
-            public string access_token = null;
-            public string expires_in = null;
-        }
-
-        private class UserData
-        {
-            public string firstName = null;
-            public string headline = null;
-            public string lastName = null;
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Web;
 using DotNetOpenAuth.AspNet;
@@ -40,8 +39,8 @@ namespace DotNetOpenAuth.Clients {
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
             var url = CreateUserInfoUrl(context);
             var request = OAuthHelpers.Load(url);
-            var userData = UserData.CreateUserInfo(request);
-            return CreateAuthenticationResult(userData);
+            var userData = CreateUserInfo(request);
+            return OAuthHelpers.CreateAuthenticationResult(ProviderName, userData);
         }
 
         #endregion IAuthenticationClient
@@ -88,33 +87,13 @@ namespace DotNetOpenAuth.Clients {
             return OAuthHelpers.BuildUri(FlickrUrl, "services/oauth/access_token", parameters);
         }
 
-        private AuthenticationResult CreateAuthenticationResult(UserData userData) {
-            return new AuthenticationResult(
-                isSuccessful: true,
-                provider: ProviderName,
-                providerUserId: userData.UserNsid,
-                userName: userData.Username,
-                extraData:
-                    new Dictionary<string, string>
-                    {
-                        {"FullName", userData.Fullname},
-                    });
-        }
+        public static UserInfo CreateUserInfo(string queryString) {
+            var queryCollection = HttpUtility.ParseQueryString(queryString);
 
-        private class UserData {
-            public string Fullname;
-            public string UserNsid;
-            public string Username;
-
-            public static UserData CreateUserInfo(string queryString) {
-                var queryCollection = HttpUtility.ParseQueryString(queryString);
-
-                return new UserData {
-                    Fullname = queryCollection.Get("fullname"),
-                    UserNsid = queryCollection.Get("user_nsid"),
-                    Username = queryCollection.Get("username")
-                };
-            }
+            return new UserInfo {
+                Id = queryCollection.Get("user_nsid"),
+                UserName = queryCollection.Get("fullname")
+            };
         }
     }
 }

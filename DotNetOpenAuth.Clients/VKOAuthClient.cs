@@ -40,10 +40,10 @@ namespace DotNetOpenAuth.Clients {
 
         private string CreateAuthorizeUri(Uri returnUrl) {
             var param = new NameValueCollection {
-                {"client_id", _appId},
-                {"redirect_uri", HttpUtility.UrlEncode(returnUrl.AbsoluteUri)},
-                {"response_type", "code"},
-                {"v", "5.3"}
+                { "client_id",      _appId },
+                { "redirect_uri",   HttpUtility.UrlEncode(returnUrl.AbsoluteUri) },
+                { "response_type",  "code" },
+                { "v",              "5.3" }
             };
 
             return OAuthHelpers.BuildUri(OAuthUrl, "authorize", param);
@@ -57,10 +57,10 @@ namespace DotNetOpenAuth.Clients {
 
         private string CreateBuildUri(HttpContextBase context) {
             var param = new NameValueCollection {
-                {"client_id", _appId},
-                {"client_secret", _appSecret},
-                {"code", context.Request["code"]},
-                {"redirect_uri", HttpUtility.UrlEncode(OAuthHelpers.RemoveUriParameter(context.Request.Url, "code"))}
+                { "client_id",       _appId },
+                { "client_secret",   _appSecret },
+                { "code",            context.Request["code"] },
+                { "redirect_uri",    HttpUtility.UrlEncode(OAuthHelpers.RemoveUriParameter(context.Request.Url, "code")) }
             };
 
             return OAuthHelpers.BuildUri(OAuthUrl, "access_token", param);
@@ -78,7 +78,7 @@ namespace DotNetOpenAuth.Clients {
 
         private static string CreateUserInfoUri(string userId) {
             var param = new NameValueCollection {
-                {"uids", userId}
+                { "uids", userId }
             };
 
             return OAuthHelpers.BuildUri(ApiUrl, "method/users.get", param);

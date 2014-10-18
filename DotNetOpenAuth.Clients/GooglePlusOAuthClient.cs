@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Web;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using DotNetOpenAuth.AspNet;
 
@@ -40,9 +39,9 @@ namespace DotNetOpenAuth.Clients {
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
             var authorizationCode = context.Request["code"];
             var accessToken = GetAccessToken(authorizationCode, context.Request.Url);
-            var userData = GetUserData(accessToken.access_token);
+            var userData = GetUserData(accessToken);
 
-            return CreateAuthenticationResult(userData);
+            return OAuthHelpers.CreateAuthenticationResult(ProviderName, userData);
         }
 
         #endregion
@@ -58,7 +57,7 @@ namespace DotNetOpenAuth.Clients {
             });
         }
 
-        private AccessToken GetAccessToken(string authorizationCode, Uri returnUrl) {
+        private string GetAccessToken(string authorizationCode, Uri returnUrl) {
             var param = new NameValueCollection
             {
                  { "client_id",     _appId },
@@ -68,40 +67,20 @@ namespace DotNetOpenAuth.Clients {
                  { "redirect_uri",  returnUrl.GetLeftPart(UriPartial.Path) },
             };
 
-            return OAuthHelpers.DeserializeJson<AccessToken>(OAuthHelpers.PostRequest(OAuthUrl, "o/oauth2/token", param));
+            return OAuthHelpers.GetObjectWithPost(OAuthUrl, "o/oauth2/token", param).access_token;
         }
 
-        private static UserData GetUserData(string accessToken) {
+        private static UserInfo GetUserData(string accessToken) {
             var uri = OAuthHelpers.BuildUri(ApiUrl, "oauth2/v1/userinfo", new NameValueCollection 
             {
                 { "access_token", accessToken } 
             });
-            return OAuthHelpers.DeserializeJsonWithLoad<UserData>(uri);
-        }
 
-        private AuthenticationResult CreateAuthenticationResult(UserData userData) {
-            return new AuthenticationResult(
-                isSuccessful: true,
-                provider: ProviderName,
-                providerUserId: userData.id,
-                userName: userData.name,
-                extraData:
-                    new Dictionary<string, string>
-                    {
-                        { "LastName",  userData.family_name },
-                        { "FirstName", userData.given_name }
-                    });
-        }
-
-        private class AccessToken {
-            public string access_token = null;
-        }
-
-        private class UserData {
-            public string id = null;
-            public string name = null;
-            public string given_name = null;
-            public string family_name = null;
+            var response = OAuthHelpers.GetObjectFromAddress(uri);
+            return new UserInfo {
+                Id = response.id,
+                UserName = response.name
+            };
         }
     }
 }

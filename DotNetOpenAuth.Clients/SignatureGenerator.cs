@@ -42,7 +42,7 @@ namespace DotNetOpenAuth.Clients {
 
         public static string Encode(string str) {
             var charClass = String.Format("0-9a-zA-Z{0}", Regex.Escape("-_.!~*'()"));
-            return Regex.Replace(str, String.Format("[^{0}]", charClass), (MatchEvaluator)EncodeEvaluator);
+            return Regex.Replace(str, String.Format("[^{0}]", charClass), EncodeEvaluator);
         }
 
         private static string EncodeEvaluator(Match match) {

@@ -1,7 +1,5 @@
 ﻿using DotNetOpenAuth.AspNet;
 using System;
-using System.Collections.Generic;
-using System.Net;
 using System.Web;
 
 namespace DotNetOpenAuth.Clients {
@@ -37,11 +35,17 @@ namespace DotNetOpenAuth.Clients {
         }
 
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
-
             var url = CreateUserInfoUrl(context);
+
             var request = OAuthHelpers.Load(url);
-            var userData = UserData.CreateUserInfo(request);
-            return CreateAuthenticationResult(userData);
+            var queryCollection = HttpUtility.ParseQueryString(request);
+
+            var userInfo = new UserInfo {
+                Id = queryCollection.Get("user_id"),
+                UserName = queryCollection.Get("screen_name")
+            };
+
+            return OAuthHelpers.CreateAuthenticationResult(ProviderName, userInfo);
         }
 
         #endregion
@@ -60,29 +64,6 @@ namespace DotNetOpenAuth.Clients {
 
             var signature = _signatureGenerator.GenerateSignature("GET", AccessTokenUrl, parameters);
             return AccessTokenUrl + "?" + parameters + "&oauth_signature=" + signature;
-        }
-
-        private class UserData {
-            public string UserId;
-            public string ScreenName;
-
-            public static UserData CreateUserInfo(string queryString) {
-                var queryCollection = HttpUtility.ParseQueryString(queryString);
-
-                return new UserData {
-                    UserId = queryCollection.Get("user_id"),
-                    ScreenName = queryCollection.Get("screen_name")
-                };
-            }
-        }
-
-        private AuthenticationResult CreateAuthenticationResult(UserData userData) {
-            return new AuthenticationResult(
-                isSuccessful: true,
-                provider: ProviderName,
-                providerUserId: userData.UserId,
-                userName: userData.ScreenName,
-                extraData: new Dictionary<string, string>());
         }
 
         private string CreateRequestTokenUrl(Uri returnUrl) {

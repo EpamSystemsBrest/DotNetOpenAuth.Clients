@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Web;
-using System.Web.Script.Serialization;
 using DotNetOpenAuth.AspNet;
 using Newtonsoft.Json.Linq;
 
@@ -19,8 +18,8 @@ namespace DotNetOpenAuth.Clients {
             return uriBuilder.ToString();
         }
 
-        public static String ConstructQueryString(NameValueCollection parameters) {
-            return String.Join("&",
+        public static String ConstructQueryString(NameValueCollection parameters, string separator = "&") {
+            return String.Join(separator,
                 parameters.Cast<string>().Select(parameter => parameter + "=" + parameters[parameter])
                 );
         }
@@ -44,28 +43,29 @@ namespace DotNetOpenAuth.Clients {
             }
         }
 
+        public static string AuthorizationLoad(string address, string auth) {
+            using (var webClient = new WebClient()) {
+                webClient.Headers[HttpRequestHeader.Authorization] = auth;
+                return Encoding.UTF8.GetString(webClient.DownloadData(address));
+            }
+        }
+
         public static string PostRequest(string postUrl, string path, NameValueCollection param) {
             using (var wb = new WebClient()) {
                 var url = (new UriBuilder(postUrl) { Path = path }.ToString());
                 return Encoding.UTF8.GetString(wb.UploadValues(url, "POST", param));
             }
         }
-
-        public static T DeserializeJson<T>(string input) {
-            var serializer = new JavaScriptSerializer();
-            return serializer.Deserialize<T>(input);
-        }
-
-        public static T DeserializeJsonWithLoad<T>(string url) {
-            return DeserializeJson<T>(Load(url));
-        }
-
         public static string GetValueFromRequest(string request, string value) {
             return HttpUtility.ParseQueryString(request).Get(value);
         }
 
         public static dynamic GetObjectFromAddress(string address) {
             return JObject.Parse(Load(address));
+        }
+
+        public static dynamic GetObjectWithPost(string postUrl, string path, NameValueCollection param) {
+            return JObject.Parse(PostRequest(postUrl, path, param));
         }
 
         public static AuthenticationResult CreateAuthenticationResult(string providerName, UserInfo userInfo) {
