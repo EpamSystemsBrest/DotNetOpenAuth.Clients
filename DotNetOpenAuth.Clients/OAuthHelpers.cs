@@ -24,19 +24,6 @@ namespace DotNetOpenAuth.Clients {
                 );
         }
 
-        public static string RemoveUriParameter(Uri uri, params string[] uriParameterName) {
-            var valueCollection = HttpUtility.ParseQueryString(uri.Query);
-
-            foreach (var str in uriParameterName) {
-                valueCollection.Remove(str);
-            }
-
-            if (valueCollection.HasKeys())
-                return uri.GetLeftPart(UriPartial.Path) + "?" + valueCollection;
-
-            return uri.GetLeftPart(UriPartial.Path);
-        }
-
         public static string Load(string address) {
             using (var webClient = new WebClient()) {
                 return Encoding.UTF8.GetString(webClient.DownloadData(address));
@@ -50,9 +37,8 @@ namespace DotNetOpenAuth.Clients {
             }
         }
 
-        public static string PostRequest(string postUrl, string path, NameValueCollection param) {
+        public static string PostRequest(string url, NameValueCollection param) {
             using (var wb = new WebClient()) {
-                var url = (new UriBuilder(postUrl) { Path = path }.ToString());
                 return Encoding.UTF8.GetString(wb.UploadValues(url, "POST", param));
             }
         }
@@ -64,8 +50,8 @@ namespace DotNetOpenAuth.Clients {
             return JObject.Parse(Load(address));
         }
 
-        public static dynamic GetObjectWithPost(string postUrl, string path, NameValueCollection param) {
-            return JObject.Parse(PostRequest(postUrl, path, param));
+        public static dynamic GetObjectWithPost(string url, NameValueCollection param) {
+            return JObject.Parse(PostRequest(url, param));
         }
 
         public static AuthenticationResult CreateAuthenticationResult(string providerName, UserInfo userInfo) {

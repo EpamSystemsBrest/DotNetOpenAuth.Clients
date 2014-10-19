@@ -7,9 +7,12 @@ namespace DotNetOpenAuth.Clients {
     public class LinkedInOAuthClient : IAuthenticationClient {
         private const string OAuthUrl = "https://www.linkedin.com/";
         private const string ApiUrl = "https://api.linkedin.com/";
+        private const string OAuthAuthorizationPath = "uas/oauth2/authorization";
+        private const string OAuthAccessTokenPath = "uas/oauth2/accessToken";
 
         private readonly string _appKey;
         private readonly string _appSecret;
+        private string _redirectUri;
 
         public LinkedInOAuthClient(string appKey, string secretKey) {
             _appKey = appKey;
@@ -21,7 +24,9 @@ namespace DotNetOpenAuth.Clients {
         public string ProviderName { get { return "LinkedIn"; } }
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
-            var uri = CreateRedirectionUri(returnUrl);
+            _redirectUri = HttpUtility.UrlEncode(returnUrl.AbsoluteUri);
+
+            var uri = CreateRedirectionUri();
             context.Response.Redirect(uri);
         }
 
@@ -34,31 +39,28 @@ namespace DotNetOpenAuth.Clients {
 
         #endregion
 
-        private string CreateRedirectionUri(Uri returnUrl) {
+        private string CreateRedirectionUri() {
             var param = new NameValueCollection {
                 { "response_type",  "code" },
                 { "client_id",      _appKey },
                 { "state",          Guid.NewGuid().ToString("N") },
-                { "redirect_uri",   HttpUtility.UrlEncode(returnUrl.AbsoluteUri) }
+                { "redirect_uri",   _redirectUri }
             };
 
-            return OAuthHelpers.BuildUri(OAuthUrl, "uas/oauth2/authorization", param);
+            return OAuthHelpers.BuildUri(OAuthUrl, OAuthAuthorizationPath, param);
         }
 
         private string GetAccessToken(HttpContextBase context) {
-            var redirectUri =
-                HttpUtility.UrlEncode(OAuthHelpers.RemoveUriParameter(context.Request.Url, "state", "code"));
-            var address = CreateAccessTokenUri(context, redirectUri);
+            var address = CreateAccessTokenUri(context);
 
             return OAuthHelpers.GetObjectFromAddress(address).access_token;
         }
 
-        private string CreateAccessTokenUri(HttpContextBase context, string redirectUri) {
-            return OAuthHelpers.BuildUri(OAuthUrl, "uas/oauth2/accessToken", new NameValueCollection
-            {
+        private string CreateAccessTokenUri(HttpContextBase context) {
+            return OAuthHelpers.BuildUri(OAuthUrl, OAuthAccessTokenPath, new NameValueCollection {
                 { "grant_type",    "authorization_code" },
                 { "code",          context.Request["code"] },
-                { "redirect_uri",  redirectUri },
+                { "redirect_uri",  _redirectUri },
                 { "client_id",     _appKey},
                 { "client_secret", _appSecret }
             });

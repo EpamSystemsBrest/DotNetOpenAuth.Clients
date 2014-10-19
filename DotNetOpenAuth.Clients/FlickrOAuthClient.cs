@@ -28,8 +28,7 @@ namespace DotNetOpenAuth.Clients {
             var response = OAuthHelpers.Load(requestTokenUrl);
             RegenerateSignatureKey(response);
 
-            var url = OAuthHelpers.BuildUri(FlickrUrl, "services/oauth/authorize", new NameValueCollection
-            {
+            var url = OAuthHelpers.BuildUri(FlickrUrl, "services/oauth/authorize", new NameValueCollection {
                 {"oauth_token", HttpUtility.ParseQueryString(response).Get("oauth_token")}
             });
 

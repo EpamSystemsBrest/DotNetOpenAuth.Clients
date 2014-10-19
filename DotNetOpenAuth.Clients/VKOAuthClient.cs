@@ -7,8 +7,13 @@ namespace DotNetOpenAuth.Clients {
     public class VkOAuthClient : IAuthenticationClient {
         private const string OAuthUrl = "https://oauth.vk.com/";
         private const string ApiUrl = "https://api.vk.com/";
+        private const string AuthorizePath = "/authorize/";
+        private const string OAuthTokenPath = "/access_token/";
+        private const string OAuthGetUsersPath = "method/users.get";
+
         private readonly string _appId;
         private readonly string _appSecret;
+        private string _redirectUri;
 
         public VkOAuthClient(string appId, string appSecret) {
             _appId = appId;
@@ -20,50 +25,34 @@ namespace DotNetOpenAuth.Clients {
         public string ProviderName { get { return "Vk"; } }
 
         public void RequestAuthentication(HttpContextBase context, Uri returnUrl) {
-            var uri = CreateAuthorizeUri(returnUrl);
+            _redirectUri = HttpUtility.UrlEncode(returnUrl.AbsoluteUri);
 
-            try {
-                context.Response.Redirect(uri);
-            }
-            catch { //Tests context //TODO: @demns help wanted
-                context.Response.RedirectLocation = uri;
-            }
+            var redirectUri = AuthClient.CreateRedirectionUri(OAuthUrl, AuthorizePath, _appId, returnUrl);
+            context.Response.Redirect(redirectUri);
         }
 
         public AuthenticationResult VerifyAuthentication(HttpContextBase context) {
-            var accessToken = GetAccessToken(context);
+            var accessToken = GetAccessToken(context.Request["code"]);
             var userData = GetUserData(accessToken);
             return OAuthHelpers.CreateAuthenticationResult(ProviderName, userData);
         }
 
         #endregion IAuthenticationClient
 
-        private string CreateAuthorizeUri(Uri returnUrl) {
-            var param = new NameValueCollection {
-                { "client_id",      _appId },
-                { "redirect_uri",   HttpUtility.UrlEncode(returnUrl.AbsoluteUri) },
-                { "response_type",  "code" },
-                { "v",              "5.3" }
-            };
-
-            return OAuthHelpers.BuildUri(OAuthUrl, "authorize", param);
+        private string GetAccessToken(string code) {
+            var address = CreateBuildUri(code);
+            return OAuthHelpers.GetObjectFromAddress(address).user_id;
         }
 
-        private string GetAccessToken(HttpContextBase context) {
-            var address = CreateBuildUri(context);
-            var response = OAuthHelpers.GetObjectFromAddress(address);
-            return response.user_id;
-        }
-
-        private string CreateBuildUri(HttpContextBase context) {
+        private string CreateBuildUri(string code) {
             var param = new NameValueCollection {
                 { "client_id",       _appId },
                 { "client_secret",   _appSecret },
-                { "code",            context.Request["code"] },
-                { "redirect_uri",    HttpUtility.UrlEncode(OAuthHelpers.RemoveUriParameter(context.Request.Url, "code")) }
+                { "code",            code },
+                { "redirect_uri",    _redirectUri }
             };
 
-            return OAuthHelpers.BuildUri(OAuthUrl, "access_token", param);
+            return OAuthHelpers.BuildUri(OAuthUrl, OAuthTokenPath, param);
         }
 
         private static UserInfo GetUserData(string userId) {
@@ -81,7 +70,7 @@ namespace DotNetOpenAuth.Clients {
                 { "uids", userId }
             };
 
-            return OAuthHelpers.BuildUri(ApiUrl, "method/users.get", param);
+            return OAuthHelpers.BuildUri(ApiUrl, OAuthGetUsersPath, param);
         }
     }
 }

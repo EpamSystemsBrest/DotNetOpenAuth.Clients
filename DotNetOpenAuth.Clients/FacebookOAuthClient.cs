@@ -39,12 +39,11 @@ namespace DotNetOpenAuth.Clients {
         }
 
         private string CreateAccessTokenUrl(string authorizationCode, Uri returnUrl) {
-            return OAuthHelpers.BuildUri(ApiUrl, "oauth/access_token", new NameValueCollection
-            {
-                {"client_id", AppId},
-                {"client_secret", _appSecret},
-                {"redirect_uri", HttpUtility.UrlEncode(returnUrl.AbsoluteUri)},
-                {"code", authorizationCode},
+            return OAuthHelpers.BuildUri(ApiUrl, "oauth/access_token", new NameValueCollection {
+                { "client_id",      AppId },
+                { "client_secret",  _appSecret },
+                { "redirect_uri",   HttpUtility.UrlEncode(returnUrl.AbsoluteUri) },
+                { "code",           authorizationCode },
             });
         }
 

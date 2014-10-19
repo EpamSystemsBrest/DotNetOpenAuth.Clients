@@ -58,21 +58,19 @@ namespace DotNetOpenAuth.Clients {
         }
 
         private string GetAccessToken(string authorizationCode, Uri returnUrl) {
-            var param = new NameValueCollection
-            {
+            var param = new NameValueCollection {
                  { "client_id",     _appId },
                  { "client_secret", _appSecret },
                  { "code",          authorizationCode },
                  { "grant_type",    "authorization_code" },
                  { "redirect_uri",  returnUrl.GetLeftPart(UriPartial.Path) },
             };
-
-            return OAuthHelpers.GetObjectWithPost(OAuthUrl, "o/oauth2/token", param).access_token;
+            var url = OAuthHelpers.BuildUri(OAuthUrl, "o/oauth2/token", new NameValueCollection());
+            return OAuthHelpers.GetObjectWithPost(url, param).access_token;
         }
 
         private static UserInfo GetUserData(string accessToken) {
-            var uri = OAuthHelpers.BuildUri(ApiUrl, "oauth2/v1/userinfo", new NameValueCollection 
-            {
+            var uri = OAuthHelpers.BuildUri(ApiUrl, "oauth2/v1/userinfo", new NameValueCollection {
                 { "access_token", accessToken } 
             });
 
