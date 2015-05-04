@@ -6,20 +6,16 @@ Client providers for Asp.Net MVC
 Top 9 Most Popular Social Networking Sites:
 ======================
 
-1 | Facebook +
+- [x] Facebook
+- [x] Twitter
+- [x] LinkedIn
+- [ ] Pinterest*
+- [x] Google+
+- [x] Tumblr
+- [x] Instagram
+- [x] VK
+- [x] Flickr
 
-2 | Twitter +
 
-3 | LinkedIn +
 
-4 | Pinterest NA
-
-5 | Google Plus+ +
-
-6 | Tumblr +
-
-7 | Instagram +
-
-8 | VK +
-
-9 | Flickr +
+*Will be soon if http://engineering.pinterest.com/post/118108695799/introducing-the-pinterest-developers-platform
